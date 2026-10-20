@@ -16,21 +16,112 @@ function showLink(text, href) {
 }
 
 // Runs inside the LinkedIn tab. Best-effort: LinkedIn changes its markup, so every field is editable in the popup.
-function readProfile() {
-  const text = (el) => (el?.innerText || "").trim();
-  const h1 = document.querySelector("main h1") || document.querySelector("h1");
-  let name = text(h1) || document.title.replace(/^\(\d+\)\s*/, "").split("|")[0].trim();
+async function readProfile() {
+  // Every element on the page, including ones inside open shadow roots.
+  const deepAll = () => {
+    const out = [];
+    const walk = (root) => {
+      for (const el of root.querySelectorAll("*")) {
+        out.push(el);
+        if (el.shadowRoot) walk(el.shadowRoot);
+      }
+    };
+    walk(document);
+    return out;
+  };
+  // Parent that also steps out of a shadow root to its host.
+  const up = (el) => el.parentElement || el.getRootNode()?.host || null;
 
+  // Visible text under `el`, one entry per text node, with consecutive duplicates (screen-reader copies) removed.
+  const linesOf = (el) => {
+    const lines = [];
+    const walk = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const t = node.textContent.trim();
+        const parent = node.parentElement;
+        const visible = !parent || typeof parent.checkVisibility !== "function" || parent.checkVisibility();
+        if (t && visible && t !== lines[lines.length - 1]) lines.push(t);
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
+      if (/^(script|style|noscript|svg)$/i.test(node.nodeName)) return;
+      if (node.shadowRoot) walk(node.shadowRoot);
+      node.childNodes.forEach(walk);
+    };
+    walk(el);
+    return lines;
+  };
+
+  const all = deepAll();
+  // Re-scan each time: content that loads while we scroll must be visible to later searches.
+  const leafWithText = (t) => deepAll().filter((el) => el.children.length === 0 && (el.textContent || "").trim() === t);
+
+  const h1 = all.find((el) => el.tagName === "H1");
+  const name = (h1?.textContent || "").trim() || document.title.replace(/^\(\d+\)\s*/, "").split("|")[0].trim();
+  // The name isn't always an <h1>, so fall back to the first element that is exactly the name.
+  const anchor = h1 || leafWithText(name)[0] || null;
+
+  const debug = {
+    h1: !!h1,
+    anchor: !!anchor,
+    shadowRoots: all.filter((el) => el.shadowRoot).length,
+    experienceHeadings: leafWithText("Experience").length,
+  };
+
+  // Most recent job from the Experience section (listed first). Returns { title, company } or null.
+  // LinkedIn uses scrambled class names and no reliable <section>, so find the "Experience" heading by its text,
+  // then climb until the surrounding block also contains the job entries.
+  const findExperience = () => {
+    for (const heading of leafWithText("Experience")) {
+      for (let el = heading, depth = 0; el && depth < 10; el = up(el), depth++) {
+        const lines = linesOf(el);
+        if (lines[0] !== "Experience" || lines.length < 4) continue;
+        const entry = lines.slice(1);
+        // Job entries have dates; this rejects look-alike "Experience" labels elsewhere on the page.
+        if (!entry.slice(0, 6).some((l) => /\b(19|20)\d{2}\b|present/i.test(l))) continue;
+        // Several roles at one company: "Company", "Full-time · 6 yrs" (a duration, no date range), then "Title", ...
+        const hasDuration = /\d+\s*(yrs?|mos?|years?|months?)\b/i.test(entry[1]);
+        const hasDateRange = /\b(19|20)\d{2}\b|present/i.test(entry[1]);
+        if (hasDuration && !hasDateRange && entry[2]) return { company: entry[0], title: entry[2] };
+        // Single role: "Title", "Company · Full-time", "Jan 2025 - Present", ...
+        return { title: entry[0], company: entry[1].split(" · ")[0] };
+      }
+    }
+    return null;
+  };
+
+  // The Experience section loads lazily, so scroll down to trigger it, then restore the scroll positions.
+  // The page may scroll inside a container rather than the window, so scroll every large scrollable area.
+  let experience = findExperience();
+  if (!experience) {
+    const scrollers = [document.scrollingElement, ...all.filter(
+      (el) => el.scrollHeight > el.clientHeight + 200 && /(auto|scroll)/.test(getComputedStyle(el).overflowY),
+    )].filter(Boolean);
+    const saved = scrollers.map((el) => el.scrollTop);
+    for (const fraction of [0.4, 0.7, 1]) {
+      scrollers.forEach((el) => { el.scrollTop = el.scrollHeight * fraction; });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      experience = findExperience();
+      if (experience) break;
+    }
+    scrollers.forEach((el, i) => { el.scrollTop = saved[i]; });
+    debug.scrollers = scrollers.length;
+    debug.experienceHeadings = leafWithText("Experience").length;
+  }
+
+  // Fallback: the headline under the name, read as text lines from the block around the name.
+  const badge = /\s*[·•]\s*(1st|2nd|3rd\+?)\b/gi;
+  const clean = (line) => line.split(name).join("").replace(badge, "").replace(/^[\s·•|]+|[\s·•|]+$/g, "");
+  const skip = /^(1st|2nd|3rd\+?|\(?(he|she|they)\/[a-z]+\)?|contact info)$/i;
   let headline = "";
-  for (let el = h1, depth = 0; el && depth < 5 && !headline; el = el.parentElement, depth++) {
-    const candidate = el.querySelector('[class*="text-body-medium"]');
-    if (candidate && text(candidate) !== name) headline = text(candidate);
+  for (let el = anchor, depth = 0; el && depth < 12 && !headline; el = up(el), depth++) {
+    headline = linesOf(el).map(clean).find((l) => l && !skip.test(l)) || "";
   }
   if (!headline) {
     const og = document.querySelector('meta[property="og:description"]');
     headline = (og?.content || "").split(" · ")[0].trim();
   }
-  return { name, headline, url: location.href };
+  return { name, headline, experience, debug, url: location.href };
 }
 
 // "Replenishment Manager at Walmart" -> { title, company }
@@ -45,7 +136,10 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const body = await response.json().catch(() => ({}));
+  // A redirect to /login means "signed out"; anything that isn't JSON means the app doesn't have this endpoint yet.
+  if (response.redirected && new URL(response.url).pathname.startsWith("/login")) return { status: 401, body: {} };
+  const body = await response.json().catch(() => null);
+  if (body === null) return { status: 0, body: { error: "The app didn't respond as expected. Is the latest version deployed?" } };
   return { status: response.status, body };
 }
 
@@ -73,13 +167,23 @@ async function main() {
     return;
   }
   if (check.status === 401) return needSignIn();
+  if (check.status !== 200) {
+    say(check.body.error || `Unexpected response (${check.status}).`, true);
+    return;
+  }
   if (check.body.existing) {
     say(`Already saved: ${check.body.existing.full_name}`);
     showLink("Open contact", `${APP_URL}/contacts/${check.body.existing.id}`);
     return;
   }
 
-  const { title, company } = splitHeadline(profile.headline);
+  // Prefer the most recent job from Experience; fall back to parsing the headline.
+  const { title, company } = profile.experience ?? splitHeadline(profile.headline);
+  if (!title && !company) {
+    say("Couldn't read their job from the page. Fill in title and company if you want them.");
+    $("debug").textContent = "Debug: " + JSON.stringify(profile.debug);
+    $("debug").hidden = false;
+  }
   $("full_name").value = profile.name;
   $("title").value = title;
   $("company").value = company;
