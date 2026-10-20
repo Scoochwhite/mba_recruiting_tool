@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -18,6 +19,19 @@ export default function LoginPage() {
       >
         Continue with Google
       </button>
+      <p className="max-w-sm text-center text-sm opacity-70">
+        A private workspace for MBA students to track informational interviews, contacts, applications, and recruiting
+        goals.
+      </p>
+      <p className="text-xs opacity-60">
+        <Link href="/privacy" className="underline">
+          Privacy
+        </Link>
+        {" · "}
+        <Link href="/terms" className="underline">
+          Terms
+        </Link>
+      </p>
     </main>
   );
 }
