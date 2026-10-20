@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "zip-extension": "node scripts/zip-extension.mjs",
+    "predev": "npm run zip-extension",
+    "prebuild": "npm run zip-extension"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -22,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "fflate": "^0.8.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

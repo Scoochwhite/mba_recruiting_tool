@@ -7,6 +7,7 @@ const links = [
   ["/applications", "Applications"],
   ["/actions", "Action items"],
   ["/history", "History"],
+  ["/extension", "Extension"],
 ] as const;
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
