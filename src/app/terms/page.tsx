@@ -1,12 +1,12 @@
 import { ContactLine, LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Terms of Service – Recruiting Tracker" };
+export const metadata = { title: "Terms of Service – MBA Recruiting Tool" };
 
 export default function TermsPage() {
   return (
     <LegalPage title="Terms of Service">
       <p>
-        Recruiting Tracker is a free tool provided as-is by a fellow student. By using it you agree to the following.
+        MBA Recruiting Tool is a free tool provided as-is by a fellow student. By using it you agree to the following.
       </p>
       <ul className="list-disc pl-5">
         <li>Use it only for your own job search and keep your account secure.</li>

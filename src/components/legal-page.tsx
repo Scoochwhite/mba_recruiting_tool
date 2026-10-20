@@ -4,7 +4,7 @@ export function LegalPage({ title, children }: { title: string; children: React.
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-6 text-sm leading-relaxed">
       <Link href="/login" className="text-blue-600 hover:underline">
-        ← Recruiting Tracker
+        ← MBA Recruiting Tool
       </Link>
       <h1 className="text-2xl font-semibold">{title}</h1>
       {children}

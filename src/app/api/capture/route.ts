@@ -1,0 +1,107 @@
+import { createClient } from "@/lib/supabase/server";
+
+// Endpoint used by the Chrome extension to save the LinkedIn profile you're viewing.
+// Auth is the app's normal session cookie, so row-level security still scopes everything to you.
+
+const SLUG = /^https?:\/\/([a-z0-9-]+\.)?linkedin\.com\/in\/([^/?#]+)/i;
+
+function slugOf(url: unknown): string | null {
+  if (typeof url !== "string") return null;
+  const match = SLUG.exec(url.trim());
+  return match ? decodeURIComponent(match[2]).toLowerCase() : null;
+}
+
+// Only extension pages carry a chrome-extension:// Origin; web pages can't forge it.
+function extensionOrigin(request: Request): string | null {
+  const origin = request.headers.get("origin");
+  return origin?.startsWith("chrome-extension://") ? origin : null;
+}
+
+function reply(request: Request, body: unknown, status = 200) {
+  const origin = extensionOrigin(request);
+  return Response.json(body, {
+    status,
+    headers: origin
+      ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Credentials": "true", Vary: "Origin" }
+      : undefined,
+  });
+}
+
+export async function OPTIONS(request: Request) {
+  const origin = extensionOrigin(request);
+  if (!origin) return new Response(null, { status: 403 });
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Allow-Methods": "GET, POST",
+      "Access-Control-Allow-Headers": "Content-Type",
+      Vary: "Origin",
+    },
+  });
+}
+
+// Is this profile already saved? ?url=<linkedin profile url>
+export async function GET(request: Request) {
+  const slug = slugOf(new URL(request.url).searchParams.get("url"));
+  if (!slug) return reply(request, { error: "Not a LinkedIn profile URL" }, 400);
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims) return reply(request, { error: "unauthorized" }, 401);
+
+  const escaped = slug.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data } = await supabase
+    .from("contacts")
+    .select("id, full_name")
+    .ilike("linkedin_url", `%/in/${escaped}%`)
+    .limit(1);
+  return reply(request, { existing: data?.[0] ?? null });
+}
+
+const clean = (v: unknown, max = 300): string | null =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+
+export async function POST(request: Request) {
+  if (!extensionOrigin(request)) return reply(request, { error: "forbidden" }, 403);
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims?.claims) return reply(request, { error: "unauthorized" }, 401);
+
+  const body = await request.json().catch(() => null);
+  const slug = slugOf(body?.linkedin_url);
+  if (!body || !slug) return reply(request, { error: "Not a LinkedIn profile URL" }, 400);
+
+  const { data: dupe } = await supabase
+    .from("contacts")
+    .select("id, full_name")
+    .ilike("linkedin_url", `%/in/${slug.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
+    .limit(1);
+  if (dupe?.length) return reply(request, { existing: dupe[0] }, 409);
+
+  const { data: contact, error } = await supabase
+    .from("contacts")
+    .insert({
+      full_name: clean(body.full_name) ?? "Unnamed contact",
+      company: clean(body.company),
+      title: clean(body.title),
+      linkedin_url: `https://www.linkedin.com/in/${slug}/`,
+      how_met: clean(body.how_met),
+    })
+    .select("id")
+    .single();
+  if (error) return reply(request, { error: error.message }, 500);
+
+  // Optional extras saved alongside the contact.
+  const note = clean(body.note, 10000);
+  if (note) await supabase.from("contact_notes").insert({ contact_id: contact.id, body: note });
+  const actionTitle = clean(body.action_title);
+  if (actionTitle) {
+    const due = typeof body.action_due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.action_due) ? body.action_due : null;
+    await supabase.from("action_items").insert({ contact_id: contact.id, title: actionTitle, due_date: due });
+  }
+
+  return reply(request, { id: contact.id }, 201);
+}

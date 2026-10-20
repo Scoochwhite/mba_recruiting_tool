@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>Save to MBA Recruiting Tool</h1>
+    <p id="message" hidden></p>
+
+    <form id="form" hidden>
+      <label>Name <input id="full_name" required /></label>
+      <label>Title <input id="title" /></label>
+      <label>Company <input id="company" /></label>
+      <label>How you met <input id="how_met" placeholder="e.g. BYU alum, intro from Sam" /></label>
+      <label>First note <textarea id="note" rows="3"></textarea></label>
+      <div class="row">
+        <label class="grow">Action item <input id="action_title" placeholder="e.g. Send a thank-you" /></label>
+        <label>Due <input id="action_due" type="date" /></label>
+      </div>
+      <button id="save" type="submit">Save contact</button>
+    </form>
+
+    <a id="link" target="_blank" hidden></a>
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

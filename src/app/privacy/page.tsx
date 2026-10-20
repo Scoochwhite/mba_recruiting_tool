@@ -1,12 +1,12 @@
 import { ContactLine, LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Privacy Policy – Recruiting Tracker" };
+export const metadata = { title: "Privacy Policy – MBA Recruiting Tool" };
 
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy">
       <p>
-        Recruiting Tracker is a free tool for MBA students to organize their job search: contacts, notes, action
+        MBA Recruiting Tool is a free tool for MBA students to organize their job search: contacts, notes, action
         items, applications, and progress goals. This page explains what it stores and how it is handled.
       </p>
 

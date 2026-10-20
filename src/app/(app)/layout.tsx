@@ -13,7 +13,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <header className="flex items-center gap-6 border-b border-black/10 px-6 py-3 dark:border-white/15">
-        <span className="font-semibold">Recruiting Tracker</span>
+        <span className="font-semibold">MBA Recruiting Tool</span>
         <nav className="flex flex-1 gap-4 text-sm">
           {links.map(([href, name]) => (
             <Link key={href} href={href} className="opacity-70 hover:opacity-100">

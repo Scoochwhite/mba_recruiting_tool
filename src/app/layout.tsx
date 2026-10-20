@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Recruiting Tracker",
+  title: "MBA Recruiting Tool",
   description: "Track contacts, applications, and recruiting KPIs",
 };
 

@@ -27,6 +27,10 @@ export async function proxy(request: NextRequest) {
     ["/login", "/auth", "/privacy", "/terms"].some((path) => request.nextUrl.pathname.startsWith(path));
 
   if (!data?.claims && !isPublic) {
+    // The browser extension calls /api and needs a status code, not a redirect to a login page.
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
