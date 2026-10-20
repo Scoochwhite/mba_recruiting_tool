@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { addRecurrence, startOfWeek, today } from "@/lib/dates";
+import { addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
 import {
   STAGES,
   RECURRENCES,
@@ -48,23 +48,64 @@ function contactFields(formData: FormData) {
   };
 }
 
+// Keeps a yearly "happy birthday" action item in step with a contact's birthday.
+// Only acts when the birthday (or name) changed, so deleting the reminder yourself sticks.
+async function syncBirthdayItem(
+  db: Awaited<ReturnType<typeof getDb>>,
+  contactId: string,
+  fullName: string,
+  birthday: string | null,
+  before: { birthday: string | null; full_name: string } | null,
+) {
+  const title = `Wish ${fullName} a happy birthday`;
+  const { data: open } = await db
+    .from("action_items")
+    .select("id")
+    .eq("contact_id", contactId)
+    .eq("source", "birthday")
+    .is("completed_at", null)
+    .maybeSingle();
+
+  if (before && before.birthday === birthday) {
+    if (open && before.full_name !== fullName) await db.from("action_items").update({ title }).eq("id", open.id);
+    return;
+  }
+  if (!birthday) {
+    if (open) await db.from("action_items").delete().eq("id", open.id);
+    return;
+  }
+  const due_date = nextBirthday(birthday, today());
+  if (open) {
+    await db.from("action_items").update({ title, due_date }).eq("id", open.id);
+  } else {
+    await db
+      .from("action_items")
+      .insert({ contact_id: contactId, title, due_date, recurrence: "yearly", source: "birthday" });
+  }
+}
+
 // Contacts -------------------------------------------------------------------
 
 export async function createContact(formData: FormData) {
   const db = await getDb();
-  const { data, error } = await db.from("contacts").insert(contactFields(formData)).select("id").single();
+  const fields = contactFields(formData);
+  const { data, error } = await db.from("contacts").insert(fields).select("id").single();
   if (error) {
     const msg = error.code === "23505" ? "You already saved a contact with that LinkedIn URL." : error.message;
     redirect(`/contacts/new?error=${encodeURIComponent(msg)}`);
   }
+  if (fields.birthday) await syncBirthdayItem(db, data.id, fields.full_name, fields.birthday, null);
   revalidatePath("/contacts");
   redirect(`/contacts/${data.id}`);
 }
 
 export async function updateContact(id: string, formData: FormData) {
   const db = await getDb();
-  const { error } = await db.from("contacts").update(contactFields(formData)).eq("id", id);
+  const fields = contactFields(formData);
+  const { data: before } = await db.from("contacts").select("birthday, full_name").eq("id", id).single();
+  const { error } = await db.from("contacts").update(fields).eq("id", id);
   if (error) redirect(`/contacts/${id}?error=${encodeURIComponent(error.message)}`);
+  await syncBirthdayItem(db, id, fields.full_name, fields.birthday, before);
   revalidatePath("/contacts");
   redirect(`/contacts/${id}`);
 }
@@ -121,6 +162,7 @@ export async function addActionItem(contactId: string | null, formData: FormData
     recurrence: oneOf(text(formData, "recurrence"), RECURRENCES, "none"),
   });
   revalidatePath("/actions");
+  revalidatePath("/");
   if (contactId) revalidatePath(`/contacts/${contactId}`);
 }
 
@@ -128,7 +170,7 @@ export async function completeActionItem(id: string) {
   const db = await getDb();
   const { data: item } = await db
     .from("action_items")
-    .select("contact_id, title, due_date, recurrence, completed_at")
+    .select("contact_id, title, due_date, recurrence, completed_at, source")
     .eq("id", id)
     .single();
   if (!item || item.completed_at) return;
@@ -141,10 +183,12 @@ export async function completeActionItem(id: string) {
       contact_id: item.contact_id,
       title: item.title,
       recurrence: item.recurrence,
+      source: item.source,
       due_date: addRecurrence(item.due_date, item.recurrence),
     });
   }
   revalidatePath("/actions");
+  revalidatePath("/");
   if (item.contact_id) revalidatePath(`/contacts/${item.contact_id}`);
 }
 
@@ -152,6 +196,7 @@ export async function reopenActionItem(id: string) {
   const db = await getDb();
   await db.from("action_items").update({ completed_at: null }).eq("id", id);
   revalidatePath("/actions");
+  revalidatePath("/");
   revalidatePath("/contacts", "layout");
 }
 
@@ -159,6 +204,7 @@ export async function deleteActionItem(id: string) {
   const db = await getDb();
   await db.from("action_items").delete().eq("id", id);
   revalidatePath("/actions");
+  revalidatePath("/");
   revalidatePath("/contacts", "layout");
 }
 

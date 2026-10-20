@@ -43,3 +43,14 @@ export function startOfWeek(date: string): string {
 export function startOfMonth(date: string): string {
   return `${date.slice(0, 8)}01`;
 }
+
+// Next occurrence of a birthday on or after `from` ("YYYY-MM-DD"); Feb 29 falls on Feb 28 in non-leap years.
+export function nextBirthday(birthday: string, from: string): string {
+  const [, month, day] = birthday.split("-").map(Number);
+  const on = (year: number) => {
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(day, lastDay)).padStart(2, "0")}`;
+  };
+  const year = Number(from.slice(0, 4));
+  return on(year) >= from ? on(year) : on(year + 1);
+}

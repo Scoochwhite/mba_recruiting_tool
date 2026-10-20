@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
 import { ACTIVITY_KINDS } from "@/lib/constants";
-import { formatDate, startOfMonth, startOfWeek, today } from "@/lib/dates";
+import { addDays, formatDate, startOfMonth, startOfWeek, today } from "@/lib/dates";
+import { ActionRow, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
 import { button, input, label } from "@/components/ui";
 
@@ -41,7 +42,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   const todayStr = today();
   const from = range === "week" ? startOfWeek(todayStr) : range === "month" ? startOfMonth(todayStr) : null;
 
-  const [counts, profile, recent] = await Promise.all([
+  const weekAhead = addDays(todayStr, 7);
+  const [counts, profile, recent, due] = await Promise.all([
     supabase.rpc("kpi_counts", { from_date: from, to_date: todayStr }),
     supabase.from("profiles").select("weekly_goals").maybeSingle(),
     supabase
@@ -50,6 +52,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(15),
+    // Open items that are overdue or due within the next 7 days.
+    supabase
+      .from("action_items")
+      .select("id, title, due_date, recurrence, completed_at, contact_id, contacts(full_name)")
+      .is("completed_at", null)
+      .lte("due_date", weekAhead)
+      .order("due_date", { ascending: true })
+      .limit(100),
   ]);
   if (counts.error) return <p className="text-sm text-red-600">Couldn&apos;t load KPIs: {counts.error.message}</p>;
 
@@ -57,6 +67,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     (counts.data as { kind: string; total: number | string }[]).map((r) => [r.kind, Number(r.total)]),
   );
   const goals: Record<string, number> = profile.data?.weekly_goals ?? {};
+
+  const dueItems = (due.data ?? []) as unknown as ActionItem[];
+  const overdue = dueItems.filter((i) => i.due_date! < todayStr);
+  const dueToday = dueItems.filter((i) => i.due_date === todayStr);
+  const dueSoon = dueItems.filter((i) => i.due_date! > todayStr);
+  const summary = [
+    ["Overdue", overdue.length, overdue.length > 0 ? "text-red-600" : ""],
+    ["Due today", dueToday.length, ""],
+    ["Next 7 days", dueSoon.length, ""],
+  ] as const;
 
   return (
     <div className="flex flex-col gap-8">
@@ -139,6 +159,39 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
             </form>
           </EditDialog>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold">Action items</h2>
+          <Link href="/actions" className="text-sm underline">
+            View all
+          </Link>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {summary.map(([name, count, color]) => (
+            <div key={name} className="rounded-lg border border-black/10 p-3 dark:border-white/15">
+              <div className="text-sm opacity-60">{name}</div>
+              <div className={`text-2xl font-semibold ${color}`}>{count}</div>
+            </div>
+          ))}
+        </div>
+        {dueItems.length ? (
+          <>
+            <ul className="divide-y divide-black/10 dark:divide-white/15">
+              {dueItems.slice(0, 6).map((item) => (
+                <ActionRow key={item.id} item={item} today={todayStr} />
+              ))}
+            </ul>
+            {dueItems.length > 6 && (
+              <Link href="/actions" className="text-sm opacity-70 hover:underline">
+                + {dueItems.length - 6} more
+              </Link>
+            )}
+          </>
+        ) : (
+          <p className="text-sm opacity-70">Nothing overdue or due in the next 7 days.</p>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">
