@@ -1,0 +1,185 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
+import { ACTIVITY_KINDS } from "@/lib/constants";
+import { formatDate, startOfMonth, startOfWeek, today } from "@/lib/dates";
+import { EditDialog } from "@/components/edit-dialog";
+import { button, input, label } from "@/components/ui";
+
+const RANGES = [
+  ["week", "This week"],
+  ["month", "This month"],
+  ["all", "All time"],
+] as const;
+
+// Singular labels for the activity log and the "Log activity" picker.
+const SINGULAR: Record<string, string> = {
+  info_interview_request: "Info interview request",
+  info_interview_completed: "Info interview completed",
+  application_submitted: "Application submitted",
+  mock_interview: "Mock interview",
+  interview: "Interview",
+};
+
+// The untyped Supabase client infers to-one embeds as arrays; at runtime they are objects (or null).
+type Activity = {
+  id: string;
+  kind: string;
+  occurred_on: string;
+  note: string | null;
+  contacts: { full_name: string } | null;
+  applications: { company: string; role: string } | null;
+};
+
+async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  const { range: rangeParam } = await searchParams;
+  const range = RANGES.find(([value]) => value === rangeParam)?.[0] ?? "week";
+
+  // Create the client first: it opts this render out of prerendering, which today() needs.
+  const supabase = await createClient();
+  const todayStr = today();
+  const from = range === "week" ? startOfWeek(todayStr) : range === "month" ? startOfMonth(todayStr) : null;
+
+  const [counts, profile, recent] = await Promise.all([
+    supabase.rpc("kpi_counts", { from_date: from, to_date: todayStr }),
+    supabase.from("profiles").select("weekly_goals").maybeSingle(),
+    supabase
+      .from("activities")
+      .select("id, kind, occurred_on, note, contacts(full_name), applications(company, role)")
+      .order("occurred_on", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(15),
+  ]);
+  if (counts.error) return <p className="text-sm text-red-600">Couldn&apos;t load KPIs: {counts.error.message}</p>;
+
+  const totals = new Map<string, number>(
+    (counts.data as { kind: string; total: number | string }[]).map((r) => [r.kind, Number(r.total)]),
+  );
+  const goals: Record<string, number> = profile.data?.weekly_goals ?? {};
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <nav className="flex overflow-hidden rounded-md border border-black/15 text-sm dark:border-white/20">
+            {RANGES.map(([value, name]) => (
+              <Link
+                key={value}
+                href={value === "week" ? "/" : `/?range=${value}`}
+                className={`px-3 py-2 ${range === value ? "bg-black text-white dark:bg-white dark:text-black" : ""}`}
+              >
+                {name}
+              </Link>
+            ))}
+          </nav>
+          <EditDialog title="Log activity" buttonLabel="Log activity">
+            <form action={addActivity} className="grid gap-4">
+              <label className={label}>
+                What happened?
+                <select name="kind" defaultValue="mock_interview" className={input}>
+                  {ACTIVITY_KINDS.map(([value]) => (
+                    <option key={value} value={value}>
+                      {SINGULAR[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={label}>
+                Date
+                <input name="occurred_on" type="date" defaultValue={todayStr} className={input} />
+              </label>
+              <label className={label}>
+                Note (optional)
+                <input name="note" className={input} />
+              </label>
+              <div>
+                <button className={button}>Log it</button>
+              </div>
+            </form>
+          </EditDialog>
+        </div>
+      </div>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ACTIVITY_KINDS.map(([kind, name]) => {
+          const total = totals.get(kind) ?? 0;
+          const goal = range === "week" ? goals[kind] : undefined;
+          return (
+            <div key={kind} className="rounded-lg border border-black/10 p-4 dark:border-white/15">
+              <div className="text-sm opacity-60">{name}</div>
+              <div className="mt-1 text-3xl font-semibold">
+                {total}
+                {goal ? <span className="text-base font-normal opacity-50"> / {goal}</span> : null}
+              </div>
+              {goal ? (
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/15">
+                  <div
+                    className="h-full bg-black dark:bg-white"
+                    style={{ width: `${Math.min(100, (total / goal) * 100)}%` }}
+                  />
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+        <div className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
+          <EditDialog title="Weekly goals" buttonLabel="Set weekly goals">
+            <form action={saveGoals} className="grid gap-4 sm:grid-cols-2">
+              {ACTIVITY_KINDS.map(([kind, name]) => (
+                <label key={kind} className={label}>
+                  {name}
+                  <input name={kind} type="number" min={0} defaultValue={goals[kind] ?? ""} className={input} />
+                </label>
+              ))}
+              <div className="sm:col-span-2">
+                <button className={button}>Save goals</button>
+              </div>
+            </form>
+          </EditDialog>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Recent activity</h2>
+        {recent.data?.length ? (
+          <ul className="divide-y divide-black/10 dark:divide-white/15">
+            {(recent.data as unknown as Activity[]).map((a) => {
+              const who =
+                a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
+              return (
+                <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
+                  <span className="w-28 text-xs opacity-60">{formatDate(a.occurred_on)}</span>
+                  <span className="flex-1">
+                    {SINGULAR[a.kind]}
+                    {who && <span className="opacity-60"> · {who}</span>}
+                    {a.note && <span className="opacity-60"> · {a.note}</span>}
+                  </span>
+                  <form action={deleteActivity.bind(null, a.id)}>
+                    <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
+                      ✕
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm opacity-70">
+            Nothing logged yet. Activity is logged when you use the buttons on a contact, move an application off the
+            wishlist, or click Log activity.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+export default function Home(props: PageProps<"/">) {
+  return (
+    <Suspense fallback={<p className="text-sm opacity-70">Loading…</p>}>
+      <Dashboard searchParams={props.searchParams} />
+    </Suspense>
+  );
+}

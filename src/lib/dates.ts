@@ -1,0 +1,45 @@
+// Dates are plain "YYYY-MM-DD" strings (Postgres `date`). "Today" is computed in a
+// fixed timezone so server-rendered pages agree with the user's calendar day.
+// TODO: make the timezone a per-user profile setting.
+const TIMEZONE = "America/Denver";
+
+export function today(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+}
+
+export function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export function addRecurrence(date: string, rule: "weekly" | "monthly" | "yearly"): string {
+  if (rule === "weekly") return addDays(date, 7);
+  const d = new Date(`${date}T00:00:00Z`);
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + (rule === "monthly" ? 1 : 12));
+  // Clamp (e.g. Jan 31 -> Feb 28, Feb 29 -> Feb 28).
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, lastDay));
+  return d.toISOString().slice(0, 10);
+}
+
+export function formatDate(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+// Sunday of the week containing `date` (weeks run Sunday through Saturday).
+export function startOfWeek(date: string): string {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 = Sunday
+  return addDays(date, -day);
+}
+
+export function startOfMonth(date: string): string {
+  return `${date.slice(0, 8)}01`;
+}
