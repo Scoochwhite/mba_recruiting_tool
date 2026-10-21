@@ -366,6 +366,21 @@ export async function saveGoals(formData: FormData) {
   revalidatePath("/history");
 }
 
+export async function saveMessageSettings(formData: FormData) {
+  const db = await getDb();
+  const { data } = await db.auth.getClaims();
+  const template = text(formData, "template");
+  const myName = text(formData, "my_name");
+  await db
+    .from("profiles")
+    .update({
+      message_template: template ? template.slice(0, 2000) : null, // null = use the default
+      display_name: myName ? myName.slice(0, 100) : null,
+    })
+    .eq("id", data!.claims.sub);
+  revalidatePath("/extension");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

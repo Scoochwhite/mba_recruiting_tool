@@ -130,6 +130,67 @@ function splitHeadline(headline) {
   return match ? { title: match[1], company: match[2] } : { title: headline, company: "" };
 }
 
+// Outreach message helpers. Keep in sync with src/lib/message.ts in the web app.
+const DEFAULT_TEMPLATE = `Hi {first_name},
+
+I'm an MBA student at BYU and I'm really interested in the work you do at {company}. Would you be open to a quick 15-20 minute call so I can learn about your path and get your advice? I'd really appreciate it.
+
+Thank you,
+{my_name}`;
+
+function firstNameOf(fullName) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  while (parts.length > 1 && /^(dr|mr|mrs|ms|miss|prof|professor)\.?$/i.test(parts[0])) parts.shift();
+  return parts[0] ?? "";
+}
+
+// Missing values stay visible as [brackets] so you notice before sending.
+function renderMessage(template, { firstName, company, myName }) {
+  return template
+    .replace(/\{first_?name\}/gi, firstName || "[first name]")
+    // "Acme Inc." followed by the template's own period would otherwise print two periods.
+    .replace(/\{company\}(\.?)/gi, (_, dot) => (company || "[company]") + (company.endsWith(".") ? "" : dot))
+    .replace(/\{(?:my|your)_?name\}/gi, myName || "[your name]");
+}
+
+// Shows a ready-to-copy message that follows the Name and Company fields until you edit it by hand.
+function setupMessage(settings) {
+  const box = $("message-text");
+  let edited = false;
+  const refresh = () => {
+    if (!edited) {
+      box.value = renderMessage(settings.template, {
+        firstName: firstNameOf($("full_name").value),
+        company: $("company").value.trim(),
+        myName: settings.my_name,
+      });
+    }
+    $("count").textContent = `${box.value.length} characters`;
+  };
+  box.addEventListener("input", () => {
+    edited = true;
+    refresh();
+  });
+  $("full_name").addEventListener("input", refresh);
+  $("company").addEventListener("input", refresh);
+
+  $("copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(box.value);
+    } catch {
+      box.select();
+      document.execCommand("copy");
+    }
+    $("copy").textContent = "Copied ✓";
+    setTimeout(() => ($("copy").textContent = "Copy message"), 1500);
+  });
+
+  $("edit-template").href = APP_URL + "/extension#message";
+  $("name-hint").hidden = !!settings.my_name;
+  $("message-section").hidden = false;
+  refresh();
+}
+
 async function api(path, options = {}) {
   const response = await fetch(APP_URL + path, {
     credentials: "include",
@@ -159,6 +220,12 @@ async function main() {
   const [{ result: profile }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readProfile });
   const profileUrl = profile.url.split(/[?#]/)[0];
 
+  // Prefer the most recent job from Experience; fall back to parsing the headline.
+  const { title, company } = profile.experience ?? splitHeadline(profile.headline);
+  $("full_name").value = profile.name;
+  $("title").value = title;
+  $("company").value = company;
+
   let check;
   try {
     check = await api(`/api/capture?url=${encodeURIComponent(profileUrl)}`);
@@ -171,22 +238,18 @@ async function main() {
     say(check.body.error || `Unexpected response (${check.status}).`, true);
     return;
   }
+  setupMessage(check.body.settings ?? { template: DEFAULT_TEMPLATE, my_name: "" });
   if (check.body.existing) {
     say(`Already saved: ${check.body.existing.full_name}`);
     showLink("Open contact", `${APP_URL}/contacts/${check.body.existing.id}`);
     return;
   }
 
-  // Prefer the most recent job from Experience; fall back to parsing the headline.
-  const { title, company } = profile.experience ?? splitHeadline(profile.headline);
   if (!title && !company) {
     say("Couldn't read their job from the page. Fill in title and company if you want them.");
     $("debug").textContent = "Debug: " + JSON.stringify(profile.debug);
     $("debug").hidden = false;
   }
-  $("full_name").value = profile.name;
-  $("title").value = title;
-  $("company").value = company;
   form.hidden = false;
 
   form.addEventListener("submit", async (event) => {

@@ -1,4 +1,8 @@
+import { Suspense } from "react";
 import manifest from "../../../../extension/manifest.json";
+import { MessageTemplateEditor } from "@/components/message-template-editor";
+import { DEFAULT_TEMPLATE } from "@/lib/message";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Install the Chrome extension – MBA Recruiting Tool" };
 
@@ -53,6 +57,18 @@ const steps: { title: string; body: React.ReactNode }[] = [
   },
 ];
 
+async function MessageSection() {
+  const supabase = await createClient();
+  const { data: profile } = await supabase.from("profiles").select("display_name, message_template").maybeSingle();
+  const name = profile?.display_name ?? "";
+  return (
+    <MessageTemplateEditor
+      template={profile?.message_template || DEFAULT_TEMPLATE}
+      myName={name.includes("@") ? "" : name}
+    />
+  );
+}
+
 export default function ExtensionPage() {
   return (
     <div className="flex flex-col gap-8">
@@ -80,6 +96,17 @@ export default function ExtensionPage() {
         </ol>
       </section>
 
+      <section id="message" className="flex scroll-mt-6 flex-col gap-3 text-sm">
+        <h2 className="text-lg font-semibold">Outreach message</h2>
+        <p className="opacity-70">
+          When you open someone&apos;s LinkedIn profile, the extension drafts this message with their first name and
+          company filled in, ready to copy and paste. Write it once here.
+        </p>
+        <Suspense fallback={<p className="opacity-70">Loading…</p>}>
+          <MessageSection />
+        </Suspense>
+      </section>
+
       <section className="flex flex-col gap-2 text-sm">
         <h2 className="text-lg font-semibold">Use it</h2>
         <ol className="list-decimal pl-5">
@@ -89,6 +116,7 @@ export default function ExtensionPage() {
           </li>
           <li>Check the name, title, and company it filled in. Fix anything that looks off, since LinkedIn&apos;s layout changes.</li>
           <li>Optionally add how you met, a first note, and an action item, then click <strong>Save contact</strong>.</li>
+          <li>Scroll to the message at the bottom of the popup, tweak it if you like, and click <strong>Copy message</strong>. Then paste it into LinkedIn.</li>
         </ol>
         <p className="opacity-70">
           If the popup says to sign in, open this app in another tab, sign in, and click the extension again. If you already

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_TEMPLATE } from "@/lib/message";
 
 // Endpoint used by the Chrome extension to save the LinkedIn profile you're viewing.
 // Auth is the app's normal session cookie, so row-level security still scopes everything to you.
@@ -57,7 +58,15 @@ export async function GET(request: Request) {
     .select("id, full_name")
     .ilike("linkedin_url", `%/in/${escaped}%`)
     .limit(1);
-  return reply(request, { existing: data?.[0] ?? null });
+
+  // Outreach message settings, so the extension can draft a message in the same round trip.
+  const { data: profile } = await supabase.from("profiles").select("display_name, message_template").maybeSingle();
+  const name = profile?.display_name ?? "";
+  const settings = {
+    template: profile?.message_template || DEFAULT_TEMPLATE,
+    my_name: name.includes("@") ? "" : name, // sign-up falls back to the email address when Google gives no name
+  };
+  return reply(request, { existing: data?.[0] ?? null, settings });
 }
 
 const clean = (v: unknown, max = 300): string | null =>

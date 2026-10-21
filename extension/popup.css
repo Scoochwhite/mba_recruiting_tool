@@ -11,3 +11,12 @@ button:disabled { opacity: 0.5; cursor: default; }
 #message.error { color: #b00020; }
 a { color: #0a66c2; }
 small { display: block; margin-top: 8px; color: #777; font-size: 11px; word-break: break-all; }
+
+section { margin-top: 14px; padding-top: 12px; border-top: 1px solid #ddd; }
+h2 { font-size: 13px; margin: 0 0 6px; }
+section textarea { width: 100%; box-sizing: border-box; }
+.spread { justify-content: space-between; align-items: center; margin-top: 6px; }
+section small { margin-top: 0; }
+#copy { padding: 6px 12px; }
+#edit-template { display: inline-block; margin-top: 6px; font-size: 12px; }
+[hidden] { display: none !important; }

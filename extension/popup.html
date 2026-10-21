@@ -21,6 +21,17 @@
       <button id="save" type="submit">Save contact</button>
     </form>
 
+    <section id="message-section" hidden>
+      <h2>Message</h2>
+      <textarea id="message-text" rows="8"></textarea>
+      <div class="row spread">
+        <small id="count"></small>
+        <button id="copy" type="button">Copy message</button>
+      </div>
+      <small id="name-hint" hidden>Add your name on the extension page so it fills in {my_name}.</small>
+      <a id="edit-template" target="_blank">Edit template</a>
+    </section>
+
     <small id="debug" hidden></small>
     <a id="link" target="_blank" hidden></a>
     <script src="config.js"></script>
