@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { RECURRENCES } from "@/lib/constants";
-import { addActionItem, completeActionItem, deleteActionItem, reopenActionItem } from "@/lib/actions";
+import {
+  addActionItem,
+  completeActionItem,
+  deleteActionItem,
+  reopenActionItem,
+  updateActionItem,
+} from "@/lib/actions";
 import { formatDate } from "@/lib/dates";
+import { EditDialog } from "./edit-dialog";
 import { button, buttonQuiet, input } from "./ui";
 
 export type ActionItem = {
@@ -39,12 +46,49 @@ export function ActionRow({ item, today }: { item: ActionItem; today: string }) 
       {item.due_date && (
         <span className={`text-xs ${overdue ? "text-red-600" : "opacity-60"}`}>{formatDate(item.due_date)}</span>
       )}
+      <EditDialog
+        title="Edit action item"
+        buttonClass="text-xs opacity-40 hover:opacity-100"
+      >
+        <EditActionForm item={item} />
+      </EditDialog>
       <form action={deleteActionItem.bind(null, item.id)}>
         <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
           ✕
         </button>
       </form>
     </li>
+  );
+}
+
+function EditActionForm({ item }: { item: ActionItem }) {
+  return (
+    <form action={updateActionItem.bind(null, item.id)} className="grid gap-4">
+      <label className="flex flex-col gap-1 text-sm">
+        Title
+        <input name="title" required defaultValue={item.title} className={input} />
+      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-sm">
+          Due date
+          <input name="due_date" type="date" defaultValue={item.due_date ?? ""} className={input} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Repeats
+          <select name="recurrence" defaultValue={item.recurrence} className={input}>
+            {RECURRENCES.map(([value, name]) => (
+              <option key={value} value={value}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="text-xs opacity-60">Repeating items need a due date. Checking one off schedules the next occurrence.</p>
+      <div>
+        <button className={button}>Save changes</button>
+      </div>
+    </form>
   );
 }
 

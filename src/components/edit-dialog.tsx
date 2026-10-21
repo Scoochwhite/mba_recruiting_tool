@@ -7,17 +7,19 @@ import { buttonQuiet } from "./ui";
 export function EditDialog({
   title,
   buttonLabel = "Edit",
+  buttonClass = buttonQuiet,
   children,
 }: {
   title: string;
   buttonLabel?: string;
+  buttonClass?: string;
   children: React.ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   return (
     <>
-      <button type="button" onClick={() => dialog.current?.showModal()} className={buttonQuiet}>
+      <button type="button" onClick={() => dialog.current?.showModal()} className={buttonClass}>
         {buttonLabel}
       </button>
       <dialog

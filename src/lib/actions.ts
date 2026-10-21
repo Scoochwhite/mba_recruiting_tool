@@ -166,6 +166,23 @@ export async function addActionItem(contactId: string | null, formData: FormData
   if (contactId) revalidatePath(`/contacts/${contactId}`);
 }
 
+export async function updateActionItem(id: string, formData: FormData) {
+  const title = text(formData, "title");
+  if (!title) return;
+  const db = await getDb();
+  await db
+    .from("action_items")
+    .update({
+      title,
+      due_date: text(formData, "due_date"),
+      recurrence: oneOf(text(formData, "recurrence"), RECURRENCES, "none"),
+    })
+    .eq("id", id);
+  revalidatePath("/actions");
+  revalidatePath("/");
+  revalidatePath("/contacts", "layout");
+}
+
 export async function completeActionItem(id: string) {
   const db = await getDb();
   const { data: item } = await db
