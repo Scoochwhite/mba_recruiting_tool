@@ -8,7 +8,7 @@ import { ContactDetails } from "@/components/contact-details";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
 import { ActionRow, AddActionForm } from "@/components/action-list";
-import { button, buttonQuiet, input } from "@/components/ui";
+import { button, input } from "@/components/ui";
 
 async function ContactDetail({ params, searchParams }: {
   params: PageProps<"/contacts/[id]">["params"];
@@ -57,13 +57,13 @@ async function ContactDetail({ params, searchParams }: {
                 key={kind}
                 disabled
                 title="Already logged. Remove it from Recent activity on the dashboard to undo."
-                className={`${buttonQuiet} cursor-not-allowed opacity-60`}
+                className="cursor-not-allowed rounded-md bg-black/10 px-3 py-2 text-sm text-black/50 dark:bg-white/15 dark:text-white/50"
               >
                 ✓ {doneLabel} {formatDate(on)}
               </button>
             ) : (
               <form key={kind} action={logContactActivity.bind(null, id, kind)}>
-                <button className={buttonQuiet}>{label}</button>
+                <button className={button}>{label}</button>
               </form>
             );
           })}
