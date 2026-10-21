@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
+import { addDays, addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
 import {
   STAGES,
   RECURRENCES,
@@ -337,15 +337,36 @@ export async function logContactActivity(contactId: string, kind: "info_intervie
     .limit(1);
   if (existing?.length) return;
   const { error } = await db.from("activities").insert({ kind, contact_id: contactId });
-  if (error && error.code !== "23505") throw new Error(error.message);
+  if (error?.code === "23505") return; // a simultaneous click already logged it and did the follow-ups
+  if (error) throw new Error(error.message);
   const target = kind === "info_interview_request" ? "requested" : "completed";
   const order = STAGES.map(([value]) => value as string);
-  const { data: contact } = await db.from("contacts").select("stage").eq("id", contactId).single();
+  const { data: contact } = await db.from("contacts").select("stage, full_name").eq("id", contactId).single();
   if (contact && order.indexOf(contact.stage) < order.indexOf(target)) {
     await db.from("contacts").update({ stage: target }).eq("id", contactId);
   }
+
+  // After an interview, remind yourself to send a thank-you note the next day.
+  if (kind === "info_interview_completed" && contact) {
+    const { data: open } = await db
+      .from("action_items")
+      .select("id")
+      .eq("contact_id", contactId)
+      .eq("source", "thank_you")
+      .is("completed_at", null)
+      .limit(1);
+    if (!open?.length) {
+      await db.from("action_items").insert({
+        contact_id: contactId,
+        title: `Send ${contact.full_name} a thank-you message`,
+        due_date: addDays(today(), 1),
+        source: "thank_you",
+      });
+    }
+  }
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
+  revalidatePath("/actions");
   revalidatePath("/");
 }
 
