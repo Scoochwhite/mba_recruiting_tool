@@ -3,17 +3,19 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
 import { ACTIVITY_KINDS } from "@/lib/constants";
-import { addDays, formatDate, startOfMonth, startOfWeek, today } from "@/lib/dates";
+import { addDays, formatDate, startOfWeek, today } from "@/lib/dates";
 import { ActionRow, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
 import { button, input, label } from "@/components/ui";
 import { DateInput } from "@/components/date-input";
 
-const RANGES = [
-  ["week", "This week"],
-  ["month", "This month"],
-  ["all", "All time"],
-] as const;
+// "Oct 18 – Oct 24, 2026" for a Sunday-to-Saturday week.
+function formatWeek(start: string): string {
+  const short = (d: string) =>
+    new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const end = addDays(start, 6);
+  return `${short(start)} – ${short(end)}, ${end.slice(0, 4)}`;
+}
 
 // Singular labels for the activity log and the "Log activity" picker.
 const SINGULAR: Record<string, string> = {
@@ -35,24 +37,33 @@ type Activity = {
 };
 
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
-  const { range: rangeParam } = await searchParams;
-  const range = RANGES.find(([value]) => value === rangeParam)?.[0] ?? "week";
+  const { week: weekParam } = await searchParams;
 
   // Create the client first: it opts this render out of prerendering, which today() needs.
   const supabase = await createClient();
   const todayStr = today();
-  const from = range === "week" ? startOfWeek(todayStr) : range === "month" ? startOfMonth(todayStr) : null;
+  const thisWeek = startOfWeek(todayStr);
+  // ?week=YYYY-MM-DD picks a past week; anything invalid or in the future falls back to this week.
+  const requested = typeof weekParam === "string" && /^\d{4}-\d{2}-\d{2}$/.test(weekParam) ? startOfWeek(weekParam) : thisWeek;
+  const weekStart = requested > thisWeek ? thisWeek : requested;
+  const weekEnd = addDays(weekStart, 6);
+  const isCurrent = weekStart === thisWeek;
+  const prevWeek = addDays(weekStart, -7);
+  const nextWeek = addDays(weekStart, 7);
 
   const weekAhead = addDays(todayStr, 7);
-  const [counts, profile, recent, due] = await Promise.all([
-    supabase.rpc("kpi_counts", { from_date: from, to_date: todayStr }),
+  const [counts, profile, snapshots, recent, due] = await Promise.all([
+    supabase.rpc("kpi_counts", { from_date: weekStart, to_date: weekEnd }),
     supabase.from("profiles").select("weekly_goals").maybeSingle(),
+    supabase.from("weekly_goal_snapshots").select("week_start, goals").order("week_start"),
     supabase
       .from("activities")
       .select("id, kind, occurred_on, note, contacts(full_name), applications(company, role)")
+      .gte("occurred_on", weekStart)
+      .lte("occurred_on", weekEnd)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(15),
+      .limit(50),
     // Open items that are overdue or due within the next 7 days.
     supabase
       .from("action_items")
@@ -67,7 +78,13 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   const totals = new Map<string, number>(
     (counts.data as { kind: string; total: number | string }[]).map((r) => [r.kind, Number(r.total)]),
   );
-  const goals: Record<string, number> = profile.data?.weekly_goals ?? {};
+  // Goals in effect for the viewed week: the latest snapshot on or before it. The current week
+  // falls back to your saved goals if no snapshot exists yet.
+  const currentGoals: Record<string, number> = profile.data?.weekly_goals ?? {};
+  const snapshot = ((snapshots.data ?? []) as { week_start: string; goals: Record<string, number> }[])
+    .filter((snap) => snap.week_start <= weekStart)
+    .at(-1);
+  const goals = snapshot?.goals ?? (isCurrent ? currentGoals : {});
 
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
   const overdue = dueItems.filter((i) => i.due_date! < todayStr);
@@ -84,17 +101,40 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-2">
-          <nav className="flex overflow-hidden rounded-md border border-black/15 text-sm dark:border-white/20">
-            {RANGES.map(([value, name]) => (
+          <nav
+            aria-label="Week"
+            className="flex items-center overflow-hidden rounded-md border border-black/15 text-sm dark:border-white/20"
+          >
+            <Link
+              href={`/?week=${prevWeek}`}
+              aria-label="Previous week"
+              className="px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              ‹
+            </Link>
+            <span className="min-w-44 px-2 text-center">
+              <span className="block text-xs opacity-60">{isCurrent ? "This week" : "Week of"}</span>
+              {formatWeek(weekStart)}
+            </span>
+            {isCurrent ? (
+              <span aria-hidden className="px-3 py-2 opacity-30">
+                ›
+              </span>
+            ) : (
               <Link
-                key={value}
-                href={value === "week" ? "/" : `/?range=${value}`}
-                className={`px-3 py-2 ${range === value ? "bg-black text-white dark:bg-white dark:text-black" : ""}`}
+                href={nextWeek >= thisWeek ? "/" : `/?week=${nextWeek}`}
+                aria-label="Next week"
+                className="px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
               >
-                {name}
+                ›
               </Link>
-            ))}
+            )}
           </nav>
+          {!isCurrent && (
+            <Link href="/" className="rounded-md border border-black/15 px-3 py-2 text-sm dark:border-white/20">
+              This week
+            </Link>
+          )}
           <EditDialog title="Log activity" buttonLabel="Log activity">
             <form action={addActivity} className="grid gap-4">
               <label className={label}>
@@ -109,7 +149,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               </label>
               <label className={label}>
                 Date
-                <DateInput name="occurred_on" defaultValue={todayStr} className={input} />
+                <DateInput name="occurred_on" defaultValue={isCurrent ? todayStr : weekEnd} className={input} />
               </label>
               <label className={label}>
                 Note (optional)
@@ -126,7 +166,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACTIVITY_KINDS.map(([kind, name]) => {
           const total = totals.get(kind) ?? 0;
-          const goal = range === "week" ? goals[kind] : undefined;
+          const goal = goals[kind];
           return (
             <div key={kind} className="rounded-lg border border-black/10 p-4 dark:border-white/15">
               <div className="text-sm opacity-60">{name}</div>
@@ -148,10 +188,13 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         <div className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
           <EditDialog title="Weekly goals" buttonLabel="Set weekly goals">
             <form action={saveGoals} className="grid gap-4 sm:grid-cols-2">
+              <p className="text-xs opacity-60 sm:col-span-2">
+                Applies from this week onward. Past weeks keep the goals they had.
+              </p>
               {ACTIVITY_KINDS.map(([kind, name]) => (
                 <label key={kind} className={label}>
                   {name}
-                  <input name={kind} type="number" min={0} defaultValue={goals[kind] ?? ""} className={input} />
+                  <input name={kind} type="number" min={0} defaultValue={currentGoals[kind] ?? ""} className={input} />
                 </label>
               ))}
               <div className="sm:col-span-2">
@@ -196,7 +239,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">Recent activity</h2>
+        <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
         {recent.data?.length ? (
           <ul className="divide-y divide-black/10 dark:divide-white/15">
             {(recent.data as unknown as Activity[]).map((a) => {
@@ -221,8 +264,9 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           </ul>
         ) : (
           <p className="text-sm opacity-70">
-            Nothing logged yet. Activity is logged when you use the buttons on a contact, move an application off the
-            wishlist, or click Log activity.
+            {isCurrent
+              ? "Nothing logged yet this week. Activity is logged when you use the buttons on a contact, move an application off the wishlist, or click Log activity."
+              : "Nothing was logged this week."}
           </p>
         )}
       </section>

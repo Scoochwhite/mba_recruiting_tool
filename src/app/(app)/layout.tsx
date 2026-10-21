@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { signOut } from "@/lib/actions";
+import { NavMenu } from "@/components/nav-menu";
 
-const links = [
+const mainLinks = [
   ["/", "Dashboard"],
   ["/contacts", "Contacts"],
   ["/applications", "Applications"],
+] as const;
+
+const menuLinks = [
   ["/actions", "Action items"],
   ["/history", "History"],
   ["/extension", "Extension"],
@@ -16,15 +19,13 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <header className="flex items-center gap-6 border-b border-black/10 px-6 py-3 dark:border-white/15">
         <span className="font-semibold">MBA Recruiting Tool</span>
         <nav className="flex flex-1 gap-4 text-sm">
-          {links.map(([href, name]) => (
+          {mainLinks.map(([href, name]) => (
             <Link key={href} href={href} className="opacity-70 hover:opacity-100">
               {name}
             </Link>
           ))}
         </nav>
-        <form action={signOut}>
-          <button className="text-sm opacity-70 hover:opacity-100">Sign out</button>
-        </form>
+        <NavMenu links={menuLinks} />
       </header>
       <div className="mx-auto w-full max-w-4xl flex-1 p-6">{children}</div>
     </>
