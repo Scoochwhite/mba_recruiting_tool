@@ -1,5 +1,6 @@
 import { APPLICATION_STATUSES } from "@/lib/constants";
 import { button, input, label } from "./ui";
+import { DateInput } from "./date-input";
 
 type Application = {
   company?: string;
@@ -49,11 +50,11 @@ export function ApplicationForm({
       </label>
       <label className={label}>
         Date applied
-        <input name="applied_on" type="date" defaultValue={application.applied_on ?? ""} className={input} />
+        <DateInput name="applied_on" defaultValue={application.applied_on ?? ""} className={input} />
       </label>
       <label className={label}>
         Deadline
-        <input name="deadline" type="date" defaultValue={application.deadline ?? ""} className={input} />
+        <DateInput name="deadline" defaultValue={application.deadline ?? ""} className={input} />
       </label>
       <label className={`${label} sm:col-span-2`}>
         Referred by

@@ -7,6 +7,7 @@ import { addDays, formatDate, startOfMonth, startOfWeek, today } from "@/lib/dat
 import { ActionRow, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
 import { button, input, label } from "@/components/ui";
+import { DateInput } from "@/components/date-input";
 
 const RANGES = [
   ["week", "This week"],
@@ -108,7 +109,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               </label>
               <label className={label}>
                 Date
-                <input name="occurred_on" type="date" defaultValue={todayStr} className={input} />
+                <DateInput name="occurred_on" defaultValue={todayStr} className={input} />
               </label>
               <label className={label}>
                 Note (optional)

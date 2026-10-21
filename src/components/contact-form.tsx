@@ -1,5 +1,6 @@
 import { STAGES } from "@/lib/constants";
 import { button, input, label } from "./ui";
+import { DateInput } from "./date-input";
 
 type Contact = {
   full_name?: string;
@@ -61,7 +62,7 @@ export function ContactForm({
       </label>
       <label className={label}>
         Birthday
-        <input name="birthday" type="date" defaultValue={contact.birthday ?? ""} className={input} />
+        <DateInput name="birthday" defaultValue={contact.birthday ?? ""} className={input} />
       </label>
       <label className={`${label} sm:col-span-2`}>
         How you met

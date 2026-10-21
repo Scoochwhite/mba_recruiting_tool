@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Lets built-in controls (calendar icon, pickers) match light and dark mode. */
+  color-scheme: light dark;
 }
 
 @theme inline {

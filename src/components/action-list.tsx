@@ -10,6 +10,7 @@ import {
 import { formatDate } from "@/lib/dates";
 import { EditDialog } from "./edit-dialog";
 import { button, buttonQuiet, input } from "./ui";
+import { DateInput } from "./date-input";
 
 export type ActionItem = {
   id: string;
@@ -71,7 +72,7 @@ function EditActionForm({ item }: { item: ActionItem }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           Due date
-          <input name="due_date" type="date" defaultValue={item.due_date ?? ""} className={input} />
+          <DateInput name="due_date" defaultValue={item.due_date ?? ""} className={input} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Repeats
@@ -96,7 +97,7 @@ export function AddActionForm({ contactId }: { contactId: string | null }) {
   return (
     <form action={addActionItem.bind(null, contactId)} className="flex flex-wrap gap-2">
       <input name="title" required placeholder="New action item…" className={`${input} flex-1 min-w-48`} />
-      <input name="due_date" type="date" className={`${input} w-auto`} />
+      <DateInput name="due_date" className={`${input} w-auto`} />
       <select name="recurrence" className={`${input} w-auto`} defaultValue="none">
         {RECURRENCES.map(([value, name]) => (
           <option key={value} value={value}>
