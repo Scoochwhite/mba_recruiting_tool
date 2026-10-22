@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addActivity, deleteActivity, saveGoals, setContactStage } from "@/lib/actions";
+import { addActivity, createContact, deleteActivity, saveGoals, setContactStage } from "@/lib/actions";
 import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
+import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { button, input, label, stageSelectCompact } from "@/components/ui";
@@ -225,12 +226,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Action items</h2>
           <div className="flex items-center gap-3">
-            <Link href="/actions" className="text-sm underline">
-              View all
-            </Link>
             <EditDialog title="New action item" buttonLabel="Add action item">
               <AddActionForm contactId={null} />
             </EditDialog>
+            <Link href="/actions" className="text-sm underline">
+              View all
+            </Link>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -263,9 +264,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         <section className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Recently added contacts</h2>
-            <Link href="/contacts" className="text-sm underline">
-              View all
-            </Link>
+            <div className="flex items-center gap-3">
+              <EditDialog title="Add contact" buttonLabel="Add contact">
+                <ContactForm action={createContact} submitLabel="Save contact" />
+              </EditDialog>
+              <Link href="/contacts" className="text-sm underline">
+                View all
+              </Link>
+            </div>
           </div>
           {newContacts.length ? (
             <ul className="divide-y divide-black/10 dark:divide-white/15">
