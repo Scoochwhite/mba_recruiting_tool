@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
 import { ACTIVITY_KINDS } from "@/lib/constants";
 import { addDays, formatDate, startOfWeek, today } from "@/lib/dates";
-import { ActionRow, type ActionItem } from "@/components/action-list";
+import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
 import { button, input, label } from "@/components/ui";
 import { DateInput } from "@/components/date-input";
@@ -206,11 +206,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       </section>
 
       <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Action items</h2>
-          <Link href="/actions" className="text-sm underline">
-            View all
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/actions" className="text-sm underline">
+              View all
+            </Link>
+            <EditDialog title="New action item" buttonLabel="Add action item">
+              <AddActionForm contactId={null} />
+            </EditDialog>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           {summary.map(([name, count, color]) => (
