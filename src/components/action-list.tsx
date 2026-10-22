@@ -38,14 +38,14 @@ export function ActionRow({ item, today }: { item: ActionItem; today: string }) 
       <div className="flex-1">
         <span className={done ? "line-through opacity-50" : ""}>{item.title}</span>
         {item.contacts && (
-          <Link href={`/contacts/${item.contact_id}`} className="ml-2 text-xs opacity-60 hover:underline">
+          <Link href={`/contacts/${item.contact_id}`} className="ml-2 text-xs opacity-70 hover:underline">
             {item.contacts.full_name}
           </Link>
         )}
       </div>
-      {item.recurrence !== "none" && <span className="text-xs opacity-60">↻ {item.recurrence}</span>}
+      {item.recurrence !== "none" && <span className="text-xs opacity-70">↻ {item.recurrence}</span>}
       {item.due_date && (
-        <span className={`text-xs ${overdue ? "text-red-600" : "opacity-60"}`}>{formatDate(item.due_date)}</span>
+        <span className={`text-xs ${overdue ? "text-red-600" : "opacity-70"}`}>{formatDate(item.due_date)}</span>
       )}
       <EditDialog
         title="Edit action item"
@@ -85,7 +85,7 @@ function EditActionForm({ item }: { item: ActionItem }) {
           </select>
         </label>
       </div>
-      <p className="text-xs opacity-60">Repeating items need a due date. Checking one off schedules the next occurrence.</p>
+      <p className="text-xs opacity-70">Repeating items need a due date. Checking one off schedules the next occurrence.</p>
       <div>
         <button className={button}>Save changes</button>
       </div>

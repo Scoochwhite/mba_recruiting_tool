@@ -11,11 +11,12 @@ export default function LoginPage() {
     });
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-2xl font-semibold">MBA Recruiting Tool</h1>
+    <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-navy p-6 text-white">
+      <h1 className="text-4xl font-black tracking-tight text-white">MBA Recruiting Tool</h1>
+      <p className="text-xs uppercase tracking-[0.35em] text-white/70">Interviews · Applications · Networking</p>
       <button
         onClick={signIn}
-        className="rounded-md bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
+        className="rounded-md bg-white px-5 py-2.5 font-bold text-navy hover:bg-lavender"
       >
         Continue with Google
       </button>
@@ -23,7 +24,7 @@ export default function LoginPage() {
         A private workspace for MBA students to track informational interviews, contacts, applications, and recruiting
         goals.
       </p>
-      <p className="text-xs opacity-60">
+      <p className="text-xs opacity-70">
         <Link href="/privacy" className="underline">
           Privacy
         </Link>

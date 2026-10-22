@@ -44,7 +44,7 @@ async function Applications() {
         if (!list.length) return null;
         return (
           <section key={status}>
-            <h2 className="text-sm font-semibold uppercase tracking-wide opacity-60">
+            <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">
               {name} · {list.length}
             </h2>
             <ul className="divide-y divide-black/10 dark:divide-white/15">
@@ -62,12 +62,12 @@ async function Applications() {
                           app.company
                         )}
                       </div>
-                      <div className="text-sm opacity-60">
+                      <div className="text-sm opacity-70">
                         {app.role}
                         {app.referrer && ` · referred by ${app.referrer.full_name}`}
                       </div>
                     </div>
-                    <div className="text-xs opacity-60">
+                    <div className="text-xs opacity-70">
                       {app.applied_on && <div>Applied {formatDate(app.applied_on)}</div>}
                       {app.deadline && (
                         <div className={overdue ? "text-red-600" : ""}>Due {formatDate(app.deadline)}</div>

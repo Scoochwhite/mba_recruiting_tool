@@ -20,7 +20,7 @@ async function CallNotes({ params }: { params: PageProps<"/contacts/[id]/call">[
       <div className="flex items-baseline justify-between">
         <div>
           <h1 className="text-xl font-semibold">Call with {contact.full_name}</h1>
-          <p className="text-sm opacity-60">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
+          <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
         </div>
         <Link href={`/contacts/${id}`} className="text-sm underline">
           Done

@@ -26,11 +26,11 @@ export function EditDialog({
         ref={dialog}
         // Clicking the dimmed backdrop (the dialog element itself) dismisses it.
         onClick={(e) => e.target === dialog.current && dialog.current?.close()}
-        className="m-auto w-[min(42rem,calc(100vw-2rem))] rounded-lg border border-black/15 bg-white p-6 text-black backdrop:bg-black/50 dark:border-white/20 dark:bg-neutral-900 dark:text-white"
+        className="m-auto w-[min(42rem,calc(100vw-2rem))] rounded-lg border border-black/15 bg-white p-6 text-black backdrop:bg-black/50 dark:border-white/20 dark:bg-navy dark:text-white"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={() => dialog.current?.close()} className="text-sm opacity-60 hover:opacity-100">
+          <button type="button" onClick={() => dialog.current?.close()} className="text-sm opacity-70 hover:opacity-100">
             Cancel
           </button>
         </div>

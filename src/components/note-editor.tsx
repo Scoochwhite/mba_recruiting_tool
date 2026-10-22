@@ -45,7 +45,7 @@ export function NoteEditor({
         onChange={(e) => setBody(e.target.value)}
         className="min-h-[60vh] w-full flex-1 rounded-md border border-black/15 bg-transparent p-4 font-mono text-sm dark:border-white/20"
       />
-      <p className="text-xs opacity-60">
+      <p className="text-xs opacity-70">
         {status === "saving" && "Saving…"}
         {status === "saved" && "Saved"}
         {status === "error" && "Couldn't save — check your connection; your text is still here."}

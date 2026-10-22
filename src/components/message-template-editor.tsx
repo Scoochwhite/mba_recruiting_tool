@@ -71,7 +71,7 @@ export function MessageTemplateEditor({ template, myName }: { template: string; 
           }}
           className={input}
         />
-        <p className="text-xs opacity-60">
+        <p className="text-xs opacity-70">
           {text.length} characters. LinkedIn limits the note on a connection request to a few hundred characters, so keep
           it short if you plan to send it that way.
         </p>

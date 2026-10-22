@@ -55,7 +55,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
     <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[8rem_1fr]">
       {rows.map(([name, value]) => (
         <div key={name} className="contents">
-          <dt className="opacity-60">{name}</dt>
+          <dt className="opacity-70">{name}</dt>
           <dd>{value || <span className="opacity-40">—</span>}</dd>
         </div>
       ))}

@@ -33,14 +33,14 @@ export function NavMenu({ links }: { links: readonly (readonly [string, string])
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="rounded-md border border-black/15 px-3 py-1.5 text-sm dark:border-white/20"
+        className="rounded-md border border-white/40 px-3 py-1.5 text-sm text-white hover:bg-white/10"
       >
         Menu ▾
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-md border border-black/15 bg-white py-1 shadow-lg dark:border-white/20 dark:bg-neutral-900"
+          className="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-md border border-black/15 bg-white py-1 text-black shadow-lg dark:border-white/20 dark:bg-navy dark:text-white"
         >
           {links.map(([href, name]) => (
             <Link key={href} href={href} role="menuitem" onClick={() => setOpen(false)} className={item}>

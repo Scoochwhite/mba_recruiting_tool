@@ -31,7 +31,7 @@ async function Items() {
         ([name, list]) =>
           list.length > 0 && (
             <section key={name}>
-              <h2 className="text-sm font-semibold uppercase tracking-wide opacity-60">{name}</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">{name}</h2>
               <ul className="divide-y divide-black/10 dark:divide-white/15">
                 {list.map((item) => <ActionRow key={item.id} item={item} today={todayStr} />)}
               </ul>
@@ -41,7 +41,7 @@ async function Items() {
       {open.length === 0 && <p className="text-sm opacity-70">Nothing open. Nice.</p>}
       {done.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wide opacity-60">Recently completed</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide opacity-70">Recently completed</h2>
           <ul className="divide-y divide-black/10 dark:divide-white/15">
             {done.map((item) => <ActionRow key={item.id} item={item} today={todayStr} />)}
           </ul>

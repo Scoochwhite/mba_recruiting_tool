@@ -33,7 +33,7 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
           <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
             <div className="flex-1">
               <div className="font-medium">{c.full_name}</div>
-              <div className="text-sm opacity-60">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
+              <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
             </div>
             {c.tags.map((t: string) => (
               <span key={t} className="rounded-full bg-black/5 px-2 py-0.5 text-xs dark:bg-white/10">

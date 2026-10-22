@@ -1,22 +1,38 @@
-body { width: 340px; margin: 0; padding: 14px; font: 13px/1.4 system-ui, sans-serif; color: #111; }
-h1 { font-size: 15px; margin: 0 0 10px; }
+/* Brand: Admiral Blue #002E5D, Ocean Blue #0077C8, Soft Lavender #EAEAEA. Typeface: Lato (bundled, SIL Open Font License). */
+@font-face { font-family: "Lato"; font-weight: 400; src: url("fonts/lato-400.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-weight: 700; src: url("fonts/lato-700.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-weight: 900; src: url("fonts/lato-900.woff2") format("woff2"); }
+
+:root { --navy: #002e5d; --ocean: #0077c8; --lavender: #eaeaea; --text: #0f2238; --border: #c9d1da; }
+
+body { width: 340px; margin: 0; font: 13px/1.4 Lato, "Helvetica Neue", Arial, sans-serif; color: var(--text); background: #fff; }
+header { background: var(--navy); color: #fff; padding: 12px 14px; }
+h1 { font-size: 15px; font-weight: 900; letter-spacing: -0.01em; margin: 0; color: #fff; }
+main { padding: 14px; }
+
 form { display: flex; flex-direction: column; gap: 8px; }
-label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #444; }
-input, textarea { font: inherit; padding: 6px 8px; border: 1px solid #bbb; border-radius: 6px; }
+label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 700; color: var(--navy); }
+input, textarea { font: inherit; font-weight: 400; color: var(--text); padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+input:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--ocean); outline-offset: 1px; }
 .row { display: flex; gap: 8px; }
 .grow { flex: 1; }
-button { padding: 8px; border: 0; border-radius: 6px; background: #111; color: #fff; font: inherit; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: default; }
-#message { margin: 0 0 8px; }
-#message.error { color: #b00020; }
-a { color: #0a66c2; }
-small { display: block; margin-top: 8px; color: #777; font-size: 11px; word-break: break-all; }
 
-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid #ddd; }
-h2 { font-size: 13px; margin: 0 0 6px; }
+button { padding: 8px; border: 0; border-radius: 8px; background: var(--navy); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+button:hover { background: #00407f; }
+button:disabled { opacity: 0.5; cursor: default; }
+
+#message { margin: 0 0 8px; }
+#message.error { color: #c62828; }
+a { color: var(--ocean); font-weight: 700; }
+small { display: block; margin-top: 8px; color: #5b6b7c; font-size: 11px; word-break: break-all; }
+
+section { margin-top: 14px; padding: 12px; background: var(--lavender); border-radius: 12px; }
+h2 { font-size: 13px; font-weight: 900; margin: 0 0 6px; color: var(--navy); }
 section textarea { width: 100%; box-sizing: border-box; }
 .spread { justify-content: space-between; align-items: center; margin-top: 6px; }
 section small { margin-top: 0; }
 #copy { padding: 6px 12px; }
 #edit-template { display: inline-block; margin-top: 6px; font-size: 12px; }
 [hidden] { display: none !important; }
+/* Links on the lavender panel use navy for contrast. */
+section a { color: var(--navy); text-decoration: underline; }

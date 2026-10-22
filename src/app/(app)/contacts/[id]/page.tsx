@@ -42,7 +42,7 @@ async function ContactDetail({ params, searchParams }: {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{contact.full_name}</h1>
-          <p className="text-sm opacity-60">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
+          <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {(
@@ -100,7 +100,7 @@ async function ContactDetail({ params, searchParams }: {
         </div>
         {notes?.map((note) => (
           <article key={note.id} className="rounded-md border border-black/10 p-3 dark:border-white/15">
-            <div className="mb-1 flex items-center justify-between text-xs opacity-60">
+            <div className="mb-1 flex items-center justify-between text-xs opacity-70">
               <time>{new Date(note.created_at).toLocaleString("en-US", { timeZone: "America/Denver" })}</time>
               <form action={deleteNote.bind(null, id, note.id)}>
                 <button className="hover:opacity-100">Delete</button>

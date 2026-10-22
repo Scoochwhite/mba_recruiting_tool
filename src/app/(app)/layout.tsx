@@ -16,11 +16,11 @@ const menuLinks = [
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <header className="flex items-center gap-6 border-b border-black/10 px-6 py-3 dark:border-white/15">
-        <span className="font-semibold">MBA Recruiting Tool</span>
+      <header className="flex items-center gap-6 bg-navy px-6 py-3 text-white shadow-sm">
+        <span className="text-lg font-black tracking-tight">MBA Recruiting Tool</span>
         <nav className="flex flex-1 gap-4 text-sm">
           {mainLinks.map(([href, name]) => (
-            <Link key={href} href={href} className="opacity-70 hover:opacity-100">
+            <Link key={href} href={href} className="text-white/80 hover:text-white">
               {name}
             </Link>
           ))}

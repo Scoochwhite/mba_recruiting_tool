@@ -113,7 +113,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               ‹
             </Link>
             <span className="min-w-44 px-2 text-center">
-              <span className="block text-xs opacity-60">{isCurrent ? "This week" : "Week of"}</span>
+              <span className="block text-xs opacity-70">{isCurrent ? "This week" : "Week of"}</span>
               {formatWeek(weekStart)}
             </span>
             {isCurrent ? (
@@ -168,16 +168,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           const total = totals.get(kind) ?? 0;
           const goal = goals[kind];
           return (
-            <div key={kind} className="rounded-lg border border-black/10 p-4 dark:border-white/15">
-              <div className="text-sm opacity-60">{name}</div>
-              <div className="mt-1 text-3xl font-semibold">
+            <div key={kind} className="rounded-lg border border-black/10 bg-lavender/40 p-4 dark:border-white/15 dark:bg-white/5">
+              <div className="text-sm opacity-70">{name}</div>
+              <div className="mt-1 text-3xl font-black text-navy dark:text-white">
                 {total}
                 {goal ? <span className="text-base font-normal opacity-50"> / {goal}</span> : null}
               </div>
               {goal ? (
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/15">
                   <div
-                    className="h-full bg-black dark:bg-white"
+                    className="h-full bg-ocean"
                     style={{ width: `${Math.min(100, (total / goal) * 100)}%` }}
                   />
                 </div>
@@ -188,7 +188,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         <div className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
           <EditDialog title="Weekly goals" buttonLabel="Set weekly goals">
             <form action={saveGoals} className="grid gap-4 sm:grid-cols-2">
-              <p className="text-xs opacity-60 sm:col-span-2">
+              <p className="text-xs opacity-70 sm:col-span-2">
                 Applies from this week onward. Past weeks keep the goals they had.
               </p>
               {ACTIVITY_KINDS.map(([kind, name]) => (
@@ -214,8 +214,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         </div>
         <div className="grid grid-cols-3 gap-4">
           {summary.map(([name, count, color]) => (
-            <div key={name} className="rounded-lg border border-black/10 p-3 dark:border-white/15">
-              <div className="text-sm opacity-60">{name}</div>
+            <div key={name} className="rounded-lg border border-black/10 bg-lavender/40 p-3 dark:border-white/15 dark:bg-white/5">
+              <div className="text-sm opacity-70">{name}</div>
               <div className={`text-2xl font-semibold ${color}`}>{count}</div>
             </div>
           ))}
@@ -247,11 +247,11 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                 a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
               return (
                 <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="w-28 text-xs opacity-60">{formatDate(a.occurred_on)}</span>
+                  <span className="w-28 text-xs opacity-70">{formatDate(a.occurred_on)}</span>
                   <span className="flex-1">
                     {SINGULAR[a.kind]}
-                    {who && <span className="opacity-60"> · {who}</span>}
-                    {a.note && <span className="opacity-60"> · {a.note}</span>}
+                    {who && <span className="opacity-70"> · {who}</span>}
+                    {a.note && <span className="opacity-70"> · {a.note}</span>}
                   </span>
                   <form action={deleteActivity.bind(null, a.id)}>
                     <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">

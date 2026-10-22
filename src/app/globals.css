@@ -1,28 +1,73 @@
 @import "tailwindcss";
 
+/* Brand palette
+   Admiral Blue #002E5D (primary), Ocean Blue #0077C8 (accent), Pure White, Soft Lavender #EAEAEA (surfaces).
+   Typeface: Lato. */
 :root {
+  --navy: #002e5d;
+  --ocean: #0077c8;
+  --lavender: #eaeaea;
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f2238;
+  --heading: #002e5d;
+  --link: #0077c8;
+  --danger: #c62828;
+  --success: #1b7f3b;
+
   /* Lets built-in controls (calendar icon, pickers) match light and dark mode. */
   color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* A deeper shade of Admiral Blue so the pure brand navy can serve as the raised surface. */
+    --background: #00203f;
+    --foreground: #eef3f9;
+    --heading: #ffffff;
+    --link: #5db4f0; /* Ocean Blue lightened for contrast on navy */
+    --danger: #ff8a80;
+    --success: #6fd89a;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-lato), "Helvetica Neue", Arial, sans-serif;
+
+  --color-navy: var(--navy);
+  --color-ocean: var(--ocean);
+  --color-lavender: var(--lavender);
+
+  /* Existing utility classes pick up the brand through these remaps:
+     "black" is Admiral Blue, links are Ocean Blue, status colors stay readable on both themes. */
+  --color-black: #002e5d;
+  --color-blue-600: var(--link);
+  --color-red-600: var(--danger);
+  --color-green-600: var(--success);
+
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  h1,
+  h2,
+  h3 {
+    color: var(--heading);
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ocean);
+    outline-offset: 2px;
+  }
 }

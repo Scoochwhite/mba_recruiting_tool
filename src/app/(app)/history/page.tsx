@@ -68,7 +68,7 @@ async function History() {
                 <tr key={week} className="border-b border-black/5 dark:border-white/10">
                   <td className="py-2 pr-4">
                     {formatDate(week)}
-                    {i === 0 && <span className="ml-2 text-xs opacity-60">in progress</span>}
+                    {i === 0 && <span className="ml-2 text-xs opacity-70">in progress</span>}
                   </td>
                   {ACTIVITY_KINDS.map(([kind]) => {
                     const total = totals.get(`${week}|${kind}`) ?? 0;
