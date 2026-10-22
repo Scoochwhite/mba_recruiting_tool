@@ -36,3 +36,7 @@ section small { margin-top: 0; }
 [hidden] { display: none !important; }
 /* Links on the lavender panel use navy for contrast. */
 section a { color: var(--navy); text-decoration: underline; }
+
+#log-request { width: 100%; margin-top: 8px; background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+#log-request:hover { background: #dfe6ee; }
+#log-request:disabled { background: transparent; border-color: transparent; color: #1b6b3a; opacity: 1; font-weight: 700; }

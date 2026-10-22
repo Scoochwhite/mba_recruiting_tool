@@ -204,6 +204,43 @@ async function api(path, options = {}) {
   return { status: response.status, body };
 }
 
+const shortDate = (d) =>
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+// "Log request sent": records the outreach, and saves the contact first if they're new.
+function setupLogRequest({ existing, payload, onSaved }) {
+  const button = $("log-request");
+  const markLogged = (on) => {
+    button.hidden = false;
+    button.disabled = true;
+    button.textContent = on ? `✓ Request logged ${shortDate(on)}` : "✓ Request logged";
+    $("log-hint").hidden = true;
+  };
+  if (existing?.request_logged) return markLogged(existing.request_logged);
+
+  button.hidden = false;
+  $("log-hint").hidden = !!existing; // the "saves them first" note only matters for new contacts
+  button.addEventListener("click", async () => {
+    if (!existing && !$("full_name").value.trim()) {
+      say("Add their name first.", true);
+      return;
+    }
+    button.disabled = true;
+    const result = await api("/api/capture", {
+      method: "POST",
+      body: JSON.stringify({ ...payload(), log_request: true }),
+    });
+    if (result.status === 401) return needSignIn();
+    if (result.status === 200 || result.status === 201) {
+      markLogged(new Date().toLocaleDateString("en-CA")); // today, in your local time
+      onSaved(result.body.id ?? result.body.existing?.id, result.status === 201);
+      return;
+    }
+    button.disabled = false;
+    say(result.body.error || "Something went wrong.", true);
+  });
+}
+
 function needSignIn() {
   form.hidden = true;
   say("Sign in to MBA Recruiting Tool first, then reopen this popup.", true);
@@ -226,6 +263,18 @@ async function main() {
   $("title").value = title;
   $("company").value = company;
 
+  // Everything the form would save for this contact.
+  const payload = () => ({
+    linkedin_url: profileUrl,
+    full_name: $("full_name").value,
+    title: $("title").value,
+    company: $("company").value,
+    how_met: $("how_met").value,
+    note: $("note").value,
+    action_title: $("action_title").value,
+    action_due: $("action_due").value,
+  });
+
   let check;
   try {
     check = await api(`/api/capture?url=${encodeURIComponent(profileUrl)}`);
@@ -239,6 +288,16 @@ async function main() {
     return;
   }
   setupMessage(check.body.settings ?? { template: DEFAULT_TEMPLATE, my_name: "" });
+  setupLogRequest({
+    existing: check.body.existing,
+    payload,
+    // Logging a request for a new contact also saves them, so the form is done.
+    onSaved: (id, created) => {
+      if (created) form.hidden = true;
+      say(created ? "Saved ✓ Request logged ✓" : "Request logged ✓");
+      showLink("Open contact", `${APP_URL}/contacts/${id}`);
+    },
+  });
   if (check.body.existing) {
     say(`Already saved: ${check.body.existing.full_name}`);
     showLink("Open contact", `${APP_URL}/contacts/${check.body.existing.id}`);
@@ -256,24 +315,13 @@ async function main() {
     event.preventDefault();
     $("save").disabled = true;
     say("Saving…");
-    const result = await api("/api/capture", {
-      method: "POST",
-      body: JSON.stringify({
-        linkedin_url: profileUrl,
-        full_name: $("full_name").value,
-        title: $("title").value,
-        company: $("company").value,
-        how_met: $("how_met").value,
-        note: $("note").value,
-        action_title: $("action_title").value,
-        action_due: $("action_due").value,
-      }),
-    });
+    const result = await api("/api/capture", { method: "POST", body: JSON.stringify(payload()) });
 
     if (result.status === 401) return needSignIn();
     if (result.status === 201 || result.status === 409) {
       const id = result.body.id ?? result.body.existing?.id;
       form.hidden = true;
+      $("log-hint").hidden = true;
       say(result.status === 201 ? "Saved ✓" : "Already saved.");
       showLink("Open contact", `${APP_URL}/contacts/${id}`);
       return;

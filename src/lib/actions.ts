@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { addDays, addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
+import { addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
+import { recordMilestone, type Milestone } from "@/lib/milestones";
 import {
   STAGES,
   RECURRENCES,
@@ -326,44 +327,9 @@ export async function deleteActivity(id: string) {
 }
 
 // Logs an info-interview milestone for a contact and advances their stage (never backwards).
-export async function logContactActivity(contactId: string, kind: "info_interview_request" | "info_interview_completed") {
+export async function logContactActivity(contactId: string, kind: Milestone) {
   const db = await getDb();
-  // Once per contact: skip if already logged (a unique index also guards double-clicks).
-  const { data: existing } = await db
-    .from("activities")
-    .select("id")
-    .eq("contact_id", contactId)
-    .eq("kind", kind)
-    .limit(1);
-  if (existing?.length) return;
-  const { error } = await db.from("activities").insert({ kind, contact_id: contactId });
-  if (error?.code === "23505") return; // a simultaneous click already logged it and did the follow-ups
-  if (error) throw new Error(error.message);
-  const target = kind === "info_interview_request" ? "requested" : "completed";
-  const order = STAGES.map(([value]) => value as string);
-  const { data: contact } = await db.from("contacts").select("stage, full_name").eq("id", contactId).single();
-  if (contact && order.indexOf(contact.stage) < order.indexOf(target)) {
-    await db.from("contacts").update({ stage: target }).eq("id", contactId);
-  }
-
-  // After an interview, remind yourself to send a thank-you note the next day.
-  if (kind === "info_interview_completed" && contact) {
-    const { data: open } = await db
-      .from("action_items")
-      .select("id")
-      .eq("contact_id", contactId)
-      .eq("source", "thank_you")
-      .is("completed_at", null)
-      .limit(1);
-    if (!open?.length) {
-      await db.from("action_items").insert({
-        contact_id: contactId,
-        title: `Send ${contact.full_name} a thank-you message`,
-        due_date: addDays(today(), 1),
-        source: "thank_you",
-      });
-    }
-  }
+  await recordMilestone(db, contactId, kind);
   revalidatePath(`/contacts/${contactId}`);
   revalidatePath("/contacts");
   revalidatePath("/actions");

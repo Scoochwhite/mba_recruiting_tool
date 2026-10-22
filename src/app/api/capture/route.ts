@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 import { DEFAULT_TEMPLATE } from "@/lib/message";
+import { recordMilestone } from "@/lib/milestones";
 
 // Endpoint used by the Chrome extension to save the LinkedIn profile you're viewing.
 // Auth is the app's normal session cookie, so row-level security still scopes everything to you.
@@ -66,7 +68,25 @@ export async function GET(request: Request) {
     template: profile?.message_template || DEFAULT_TEMPLATE,
     my_name: name.includes("@") ? "" : name, // sign-up falls back to the email address when Google gives no name
   };
-  return reply(request, { existing: data?.[0] ?? null, settings });
+
+  // For a saved contact, whether (and when) the outreach request was already logged.
+  let existing: { id: string; full_name: string; request_logged: string | null } | null = null;
+  if (data?.[0]) {
+    const { data: logged } = await supabase
+      .from("activities")
+      .select("occurred_on")
+      .eq("contact_id", data[0].id)
+      .eq("kind", "info_interview_request")
+      .limit(1);
+    existing = { ...data[0], request_logged: logged?.[0]?.occurred_on ?? null };
+  }
+  return reply(request, { existing, settings });
+}
+
+function revalidateAfterLog(contactId: string) {
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/contacts");
+  revalidatePath("/");
 }
 
 const clean = (v: unknown, max = 300): string | null =>
@@ -88,7 +108,16 @@ export async function POST(request: Request) {
     .select("id, full_name")
     .ilike("linkedin_url", `%/in/${slug.replace(/[\\%_]/g, (c) => `\\${c}`)}%`)
     .limit(1);
-  if (dupe?.length) return reply(request, { existing: dupe[0] }, 409);
+  const logRequest = body.log_request === true;
+  if (dupe?.length) {
+    // Already saved: "Log request sent" still applies to the existing contact.
+    if (logRequest) {
+      await recordMilestone(supabase, dupe[0].id, "info_interview_request");
+      revalidateAfterLog(dupe[0].id);
+      return reply(request, { existing: dupe[0], requestLogged: true });
+    }
+    return reply(request, { existing: dupe[0] }, 409);
+  }
 
   const { data: contact, error } = await supabase
     .from("contacts")
@@ -112,5 +141,9 @@ export async function POST(request: Request) {
     await supabase.from("action_items").insert({ contact_id: contact.id, title: actionTitle, due_date: due });
   }
 
-  return reply(request, { id: contact.id }, 201);
+  if (logRequest) {
+    await recordMilestone(supabase, contact.id, "info_interview_request");
+    revalidateAfterLog(contact.id);
+  }
+  return reply(request, { id: contact.id, requestLogged: logRequest }, 201);
 }
