@@ -107,7 +107,7 @@ async function ContactDetail({ params, searchParams }: {
                 <button className="hover:opacity-100">Delete</button>
               </form>
             </div>
-            <p className="whitespace-pre-wrap text-sm">{note.body}</p>
+            <p className="whitespace-pre-wrap break-words text-sm">{note.body}</p>
           </article>
         ))}
       </section>

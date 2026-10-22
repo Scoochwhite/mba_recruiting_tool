@@ -16,18 +16,21 @@ const menuLinks = [
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      <header className="flex items-center gap-6 bg-navy px-6 py-3 text-white shadow-sm">
-        <span className="text-lg font-black tracking-tight">MBA Recruiting Tool</span>
-        <nav className="flex flex-1 gap-4 text-sm">
+      {/* Phones: title and Menu on the first row, links on a second row. From sm up: one row. */}
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-navy px-4 py-3 text-white shadow-sm sm:px-6">
+        <span className="whitespace-nowrap text-lg font-black tracking-tight">MBA Recruiting Tool</span>
+        <nav className="order-last flex w-full gap-4 text-sm sm:order-none sm:w-auto sm:flex-1">
           {mainLinks.map(([href, name]) => (
             <Link key={href} href={href} className="text-white/80 hover:text-white">
               {name}
             </Link>
           ))}
         </nav>
-        <NavMenu links={menuLinks} />
+        <div className="ml-auto sm:ml-0">
+          <NavMenu links={menuLinks} />
+        </div>
       </header>
-      <div className="mx-auto w-full max-w-4xl flex-1 p-6">{children}</div>
+      <div className="mx-auto w-full min-w-0 max-w-4xl flex-1 p-4 sm:p-6">{children}</div>
     </>
   );
 }

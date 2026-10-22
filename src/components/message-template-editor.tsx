@@ -79,7 +79,7 @@ export function MessageTemplateEditor({ template, myName }: { template: string; 
 
       <div className="flex flex-col gap-1">
         <span className="text-sm opacity-70">Preview (with an example name and company)</span>
-        <pre className="whitespace-pre-wrap rounded-md border border-black/10 p-3 font-sans text-sm dark:border-white/15">
+        <pre className="whitespace-pre-wrap break-words rounded-md border border-black/10 p-3 font-sans text-sm dark:border-white/15">
           {preview}
         </pre>
       </div>
