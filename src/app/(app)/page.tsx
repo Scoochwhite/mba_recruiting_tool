@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
-import { ACTIVITY_KINDS } from "@/lib/constants";
-import { addDays, formatDate, startOfWeek, today } from "@/lib/dates";
+import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
+import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
 import { button, input, label } from "@/components/ui";
@@ -52,7 +52,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   const nextWeek = addDays(weekStart, 7);
 
   const weekAhead = addDays(todayStr, 7);
-  const [counts, profile, snapshots, recent, due] = await Promise.all([
+  const [counts, profile, snapshots, recent, due, newest] = await Promise.all([
     supabase.rpc("kpi_counts", { from_date: weekStart, to_date: weekEnd }),
     supabase.from("profiles").select("weekly_goals").maybeSingle(),
     supabase.from("weekly_goal_snapshots").select("week_start, goals").order("week_start"),
@@ -72,6 +72,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       .lte("due_date", weekAhead)
       .order("due_date", { ascending: true })
       .limit(100),
+    // The three most recently added contacts.
+    supabase
+      .from("contacts")
+      .select("id, full_name, title, company, stage, created_at")
+      .order("created_at", { ascending: false })
+      .limit(3),
   ]);
   if (counts.error) return <p className="text-sm text-red-600">Couldn&apos;t load KPIs: {counts.error.message}</p>;
 
@@ -85,6 +91,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     .filter((snap) => snap.week_start <= weekStart)
     .at(-1);
   const goals = snapshot?.goals ?? (isCurrent ? currentGoals : {});
+
+  const newContacts = (newest.data ?? []) as {
+    id: string;
+    full_name: string;
+    title: string | null;
+    company: string | null;
+    stage: string;
+    created_at: string;
+  }[];
+  const stageName = Object.fromEntries(STAGES);
 
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
   const overdue = dueItems.filter((i) => i.due_date! < todayStr);
@@ -243,38 +259,69 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
-        {recent.data?.length ? (
-          <ul className="divide-y divide-black/10 dark:divide-white/15">
-            {(recent.data as unknown as Activity[]).map((a) => {
-              const who =
-                a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
-              return (
-                <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="w-28 text-xs opacity-70">{formatDate(a.occurred_on)}</span>
-                  <span className="flex-1">
-                    {SINGULAR[a.kind]}
-                    {who && <span className="opacity-70"> · {who}</span>}
-                    {a.note && <span className="opacity-70"> · {a.note}</span>}
-                  </span>
-                  <form action={deleteActivity.bind(null, a.id)}>
-                    <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
-                      ✕
-                    </button>
-                  </form>
+      <div className="grid gap-8 md:grid-cols-2">
+        <section className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold">Recently added contacts</h2>
+            <Link href="/contacts" className="text-sm underline">
+              View all
+            </Link>
+          </div>
+          {newContacts.length ? (
+            <ul className="divide-y divide-black/10 dark:divide-white/15">
+              {newContacts.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium">{c.full_name}</div>
+                      <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
+                    </div>
+                    <div className="shrink-0 text-right text-xs opacity-70">
+                      <div>{stageName[c.stage]}</div>
+                      <div>Added {formatShortDate(dateOf(c.created_at))}</div>
+                    </div>
+                  </Link>
                 </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm opacity-70">
-            {isCurrent
-              ? "Nothing logged yet this week. Activity is logged when you use the buttons on a contact, move an application off the wishlist, or click Log activity."
-              : "Nothing was logged this week."}
-          </p>
-        )}
-      </section>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm opacity-70">No contacts yet. Add one from the Contacts page or the Chrome extension.</p>
+          )}
+        </section>
+
+        <section className="flex min-w-0 flex-col gap-3">
+          <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
+          {recent.data?.length ? (
+            <ul className="divide-y divide-black/10 dark:divide-white/15">
+              {(recent.data as unknown as Activity[]).map((a) => {
+                const who =
+                  a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
+                return (
+                  <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
+                    <span className="w-14 shrink-0 text-xs opacity-70">{formatShortDate(a.occurred_on)}</span>
+                    <span className="flex-1">
+                      {SINGULAR[a.kind]}
+                      {who && <span className="opacity-70"> · {who}</span>}
+                      {a.note && <span className="opacity-70"> · {a.note}</span>}
+                    </span>
+                    <form action={deleteActivity.bind(null, a.id)}>
+                      <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
+                        ✕
+                      </button>
+                    </form>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm opacity-70">
+              {isCurrent
+                ? "Nothing logged yet this week. Activity is logged when you use the buttons on a contact, move an application off the wishlist, or click Log activity."
+                : "Nothing was logged this week."}
+            </p>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

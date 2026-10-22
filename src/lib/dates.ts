@@ -63,3 +63,8 @@ export function formatShortDate(date: string): string {
     timeZone: "UTC",
   });
 }
+
+// The calendar day ("YYYY-MM-DD") of a timestamp, in the app's timezone.
+export function dateOf(timestamp: string): string {
+  return new Date(timestamp).toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+}
