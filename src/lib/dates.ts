@@ -54,3 +54,12 @@ export function nextBirthday(birthday: string, from: string): string {
   const year = Number(from.slice(0, 4));
   return on(year) >= from ? on(year) : on(year + 1);
 }
+
+// "Oct 21": compact form for tight spaces.
+export function formatShortDate(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}

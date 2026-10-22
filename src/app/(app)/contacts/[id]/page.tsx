@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { addNote, deleteContact, deleteNote, logContactActivity, updateContact } from "@/lib/actions";
-import { formatDate, today } from "@/lib/dates";
+import { formatShortDate, today } from "@/lib/dates";
 import { ContactDetails } from "@/components/contact-details";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
@@ -39,12 +39,13 @@ async function ContactDetail({ params, searchParams }: {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold">{contact.full_name}</h1>
           <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Buttons stay on one row from tablet width up; the title and company wrap instead. */}
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:flex-nowrap">
           {(
             [
               ["info_interview_request", "Log request sent", "Request sent"],
@@ -57,17 +58,17 @@ async function ContactDetail({ params, searchParams }: {
                 key={kind}
                 disabled
                 title="Already logged. Remove it from Recent activity on the dashboard to undo."
-                className="cursor-not-allowed rounded-md bg-black/10 px-3 py-2 text-sm text-black/50 dark:bg-white/15 dark:text-white/50"
+                className="cursor-not-allowed whitespace-nowrap rounded-md bg-black/10 px-3 py-2 text-sm text-black/50 dark:bg-white/15 dark:text-white/50"
               >
-                ✓ {doneLabel} {formatDate(on)}
+                ✓ {doneLabel} {formatShortDate(on)}
               </button>
             ) : (
               <form key={kind} action={logContactActivity.bind(null, id, kind)}>
-                <button className={button}>{label}</button>
+                <button className={`${button} whitespace-nowrap`}>{label}</button>
               </form>
             );
           })}
-          <Link href={`/contacts/${id}/call`} className={button}>
+          <Link href={`/contacts/${id}/call`} className={`${button} whitespace-nowrap`}>
             Start call notes
           </Link>
         </div>
