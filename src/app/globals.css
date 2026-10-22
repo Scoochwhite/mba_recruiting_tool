@@ -66,6 +66,12 @@
     letter-spacing: -0.01em;
   }
 
+  /* Native dropdown lists would otherwise inherit white text from styled selects. */
+  option {
+    color: var(--foreground);
+    background: var(--background);
+  }
+
   :focus-visible {
     outline: 2px solid var(--ocean);
     outline-offset: 2px;

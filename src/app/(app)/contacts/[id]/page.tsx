@@ -2,13 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addNote, deleteContact, deleteNote, logContactActivity, updateContact } from "@/lib/actions";
+import { addNote, deleteContact, deleteNote, logContactActivity, setContactStage, updateContact } from "@/lib/actions";
 import { formatShortDate, today } from "@/lib/dates";
 import { ContactDetails } from "@/components/contact-details";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
 import { ActionRow, AddActionForm } from "@/components/action-list";
-import { button, input } from "@/components/ui";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { STAGES } from "@/lib/constants";
+import { button, input, stageSelectProminent } from "@/components/ui";
 
 async function ContactDetail({ params, searchParams }: {
   params: PageProps<"/contacts/[id]">["params"];
@@ -43,6 +45,19 @@ async function ContactDetail({ params, searchParams }: {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">{contact.full_name}</h1>
           <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
+          <form action={setContactStage.bind(null, id)} className="mt-3">
+            <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide opacity-80">
+              Stage
+              {/* key remounts the select when the server value changes (e.g. after "Log request sent"). */}
+              <AutoSubmitSelect
+                key={contact.stage}
+                name="stage"
+                defaultValue={contact.stage}
+                options={STAGES}
+                className={stageSelectProminent}
+              />
+            </label>
+          </form>
         </div>
         {/* Buttons stay on one row from tablet width up; the title and company wrap instead. */}
         <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:flex-nowrap">

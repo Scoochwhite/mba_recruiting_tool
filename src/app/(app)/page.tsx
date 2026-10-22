@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addActivity, deleteActivity, saveGoals } from "@/lib/actions";
+import { addActivity, deleteActivity, saveGoals, setContactStage } from "@/lib/actions";
 import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { EditDialog } from "@/components/edit-dialog";
-import { button, input, label } from "@/components/ui";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { button, input, label, stageSelectCompact } from "@/components/ui";
 import { DateInput } from "@/components/date-input";
 
 // "Oct 18 – Oct 24, 2026" for a Sunday-to-Saturday week.
@@ -100,7 +101,6 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     stage: string;
     created_at: string;
   }[];
-  const stageName = Object.fromEntries(STAGES);
 
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
   const overdue = dueItems.filter((i) => i.due_date! < todayStr);
@@ -270,17 +270,24 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           {newContacts.length ? (
             <ul className="divide-y divide-black/10 dark:divide-white/15">
               {newContacts.map((c) => (
-                <li key={c.id}>
-                  <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium">{c.full_name}</div>
-                      <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
-                    </div>
-                    <div className="shrink-0 text-right text-xs opacity-70">
-                      <div>{stageName[c.stage]}</div>
-                      <div>Added {formatShortDate(dateOf(c.created_at))}</div>
-                    </div>
+                <li key={c.id} className="flex items-center gap-3 py-3">
+                  <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1 hover:opacity-80">
+                    <div className="font-medium">{c.full_name}</div>
+                    <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
                   </Link>
+                  {/* A form, not part of the link, so the dropdown is clickable on its own. */}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <form action={setContactStage.bind(null, c.id)}>
+                      <AutoSubmitSelect
+                        key={c.stage}
+                        name="stage"
+                        defaultValue={c.stage}
+                        options={STAGES}
+                        className={stageSelectCompact}
+                      />
+                    </form>
+                    <span className="text-xs opacity-70">Added {formatShortDate(dateOf(c.created_at))}</span>
+                  </div>
                 </li>
               ))}
             </ul>

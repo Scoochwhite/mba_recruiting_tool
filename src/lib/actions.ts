@@ -111,6 +111,18 @@ export async function updateContact(id: string, formData: FormData) {
   redirect(`/contacts/${id}`);
 }
 
+// Sets a contact's stage directly (the quick dropdown on the contact page and dashboard).
+// It only changes the stage; KPI counts come from the explicit "Log request sent / interview done" buttons.
+export async function setContactStage(id: string, formData: FormData) {
+  const stage = text(formData, "stage");
+  if (!STAGES.some(([value]) => value === stage)) return;
+  const db = await getDb();
+  await db.from("contacts").update({ stage }).eq("id", id);
+  revalidatePath(`/contacts/${id}`);
+  revalidatePath("/contacts");
+  revalidatePath("/");
+}
+
 export async function deleteContact(id: string) {
   const db = await getDb();
   await db.from("contacts").delete().eq("id", id);
