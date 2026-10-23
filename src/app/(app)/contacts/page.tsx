@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { STAGES } from "@/lib/constants";
-import { button, buttonQuiet, input } from "@/components/ui";
+import { button, buttonQuiet, input, inputAuto } from "@/components/ui";
 
 async function ContactList({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
   const { q, stage, referrers } = await searchParams;
@@ -62,14 +62,14 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
 async function Filters({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
   const { q, stage, referrers } = await searchParams;
   return (
-    <form className="flex flex-wrap items-center gap-2">
+    <form className="flex items-center gap-2">
       <input
         name="q"
         defaultValue={typeof q === "string" ? q : ""}
         placeholder="Search name, company, title…"
-        className={`${input} min-w-48 flex-1`}
+        className={`${input} min-w-0 flex-1`}
       />
-      <select name="stage" defaultValue={typeof stage === "string" ? stage : ""} className={`${input} w-auto`}>
+      <select name="stage" defaultValue={typeof stage === "string" ? stage : ""} className={inputAuto}>
         <option value="">All stages</option>
         {STAGES.map(([value, name]) => (
           <option key={value} value={value}>
@@ -77,9 +77,14 @@ async function Filters({ searchParams }: { searchParams: PageProps<"/contacts">[
           </option>
         ))}
       </select>
-      <label className="flex items-center gap-2 whitespace-nowrap text-sm">
-        <input type="checkbox" name="referrers" value="1" defaultChecked={referrers === "1"} />
-        <span className="text-amber-600 dark:text-amber-400">★</span> Willing to refer
+      <label
+        className="flex cursor-pointer items-center gap-1.5 text-lg"
+        title="Only show contacts willing to refer you"
+      >
+        <input type="checkbox" name="referrers" value="1" defaultChecked={referrers === "1"} aria-label="Only show contacts willing to refer you" />
+        <span aria-hidden className="text-amber-600 dark:text-amber-400">
+          ★
+        </span>
       </label>
       <button className={buttonQuiet}>Filter</button>
     </form>

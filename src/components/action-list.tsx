@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions";
 import { formatDate } from "@/lib/dates";
 import { EditDialog } from "./edit-dialog";
-import { button, buttonQuiet, input } from "./ui";
+import { button, buttonQuiet, input, inputAuto } from "./ui";
 import { DateInput } from "./date-input";
 
 export type ActionItem = {
@@ -97,8 +97,8 @@ export function AddActionForm({ contactId }: { contactId: string | null }) {
   return (
     <form action={addActionItem.bind(null, contactId)} className="flex flex-wrap gap-2">
       <input name="title" required placeholder="New action item…" className={`${input} flex-1 min-w-48`} />
-      <DateInput name="due_date" className={`${input} w-auto`} />
-      <select name="recurrence" className={`${input} w-auto`} defaultValue="none">
+      <DateInput name="due_date" className={inputAuto} />
+      <select name="recurrence" className={inputAuto} defaultValue="none">
         {RECURRENCES.map(([value, name]) => (
           <option key={value} value={value}>
             {name}

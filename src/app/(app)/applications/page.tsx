@@ -12,7 +12,7 @@ import { formatDate, today } from "@/lib/dates";
 import { ApplicationForm } from "@/components/application-form";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { EditDialog } from "@/components/edit-dialog";
-import { buttonQuiet, input } from "@/components/ui";
+import { buttonQuiet, inputAuto } from "@/components/ui";
 
 async function Applications() {
   const supabase = await createClient();
@@ -83,7 +83,7 @@ async function Applications() {
                         name="status"
                         defaultValue={app.status}
                         options={APPLICATION_STATUSES}
-                        className={`${input} w-auto`}
+                        className={inputAuto}
                       />
                     </form>
                     <form action={logInterview.bind(null, app.id)}>
