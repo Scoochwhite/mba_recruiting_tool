@@ -43,12 +43,12 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
           <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
             <div className="flex-1">
               <div className="font-medium">
+                {c.full_name}
                 {c.willing_to_refer && (
-                  <span className="mr-1 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
+                  <span className="ml-1.5 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
                     ★
                   </span>
                 )}
-                {c.full_name}
               </div>
               <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
             </div>

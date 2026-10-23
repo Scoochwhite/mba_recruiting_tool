@@ -280,12 +280,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                 <li key={c.id} className="flex items-center gap-3 py-3">
                   <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1 hover:opacity-80">
                     <div className="font-medium">
+                      {c.full_name}
                       {c.willing_to_refer && (
-                        <span className="mr-1 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
+                        <span className="ml-1.5 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
                           ★
                         </span>
                       )}
-                      {c.full_name}
                     </div>
                     <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
                   </Link>
