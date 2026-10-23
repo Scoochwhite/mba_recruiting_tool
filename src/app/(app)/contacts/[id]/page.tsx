@@ -73,11 +73,11 @@ async function ContactDetail({ params, searchParams }: {
                 title={contact.willing_to_refer ? "Marked as willing to refer you. Click to undo." : "Star if they've said they're willing to refer you"}
                 className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-bold ${
                   contact.willing_to_refer
-                    ? "border-amber-500 bg-amber-500/15"
+                    ? "border-ocean bg-ocean/10"
                     : "border-black/15 opacity-80 hover:opacity-100 dark:border-white/20"
                 }`}
               >
-                <span aria-hidden className={contact.willing_to_refer ? "text-amber-600 dark:text-amber-400" : ""}>
+                <span aria-hidden className={contact.willing_to_refer ? "text-blue-600" : ""}>
                   {contact.willing_to_refer ? "★" : "☆"}
                 </span>
                 {contact.willing_to_refer ? "Willing to refer" : "Willing to refer?"}

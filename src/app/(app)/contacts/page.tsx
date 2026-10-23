@@ -44,7 +44,7 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
             <div className="flex-1">
               <div className="font-medium">
                 {c.willing_to_refer && (
-                  <span className="mr-1 text-amber-600 dark:text-amber-400" title="Willing to refer you" aria-label="Willing to refer you">
+                  <span className="mr-1 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
                     ★
                   </span>
                 )}
@@ -100,7 +100,7 @@ async function Filters({ searchParams }: { searchParams: PageProps<"/contacts">[
         title="Only show contacts willing to refer you"
       >
         <input type="checkbox" name="referrers" value="1" defaultChecked={referrers === "1"} aria-label="Only show contacts willing to refer you" />
-        <span aria-hidden className="text-amber-600 dark:text-amber-400">
+        <span aria-hidden className="text-blue-600">
           ★
         </span>
       </label>

@@ -281,7 +281,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                   <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1 hover:opacity-80">
                     <div className="font-medium">
                       {c.willing_to_refer && (
-                        <span className="mr-1 text-amber-600 dark:text-amber-400" title="Willing to refer you" aria-label="Willing to refer you">
+                        <span className="mr-1 text-blue-600" title="Willing to refer you" aria-label="Willing to refer you">
                           ★
                         </span>
                       )}
