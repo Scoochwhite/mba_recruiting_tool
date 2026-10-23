@@ -77,7 +77,7 @@ async function ContactDetail({ params, searchParams }: {
                     : "border-black/15 opacity-80 hover:opacity-100 dark:border-white/20"
                 }`}
               >
-                <span aria-hidden className={contact.willing_to_refer ? "text-blue-600" : ""}>
+                <span aria-hidden className={contact.willing_to_refer ? "text-navy dark:text-white" : ""}>
                   {contact.willing_to_refer ? "★" : "☆"}
                 </span>
                 {contact.willing_to_refer ? "Willing to refer" : "Willing to refer?"}
