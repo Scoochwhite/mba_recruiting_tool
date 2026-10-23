@@ -123,6 +123,16 @@ export async function setContactStage(id: string, formData: FormData) {
   revalidatePath("/");
 }
 
+// Stars (or unstars) a contact who has said they're willing to refer you.
+export async function setWillingToRefer(id: string, value: boolean) {
+  const db = await getDb();
+  await db.from("contacts").update({ willing_to_refer: value }).eq("id", id);
+  revalidatePath(`/contacts/${id}`);
+  revalidatePath("/contacts");
+  revalidatePath("/applications");
+  revalidatePath("/");
+}
+
 export async function deleteContact(id: string) {
   const db = await getDb();
   await db.from("contacts").delete().eq("id", id);

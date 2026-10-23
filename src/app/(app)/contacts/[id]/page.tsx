@@ -2,7 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addNote, deleteContact, deleteNote, logContactActivity, setContactStage, updateContact } from "@/lib/actions";
+import {
+  addNote,
+  deleteContact,
+  deleteNote,
+  logContactActivity,
+  setContactStage,
+  setWillingToRefer,
+  updateContact,
+} from "@/lib/actions";
 import { formatShortDate, today } from "@/lib/dates";
 import { ContactDetails } from "@/components/contact-details";
 import { ContactForm } from "@/components/contact-form";
@@ -45,19 +53,37 @@ async function ContactDetail({ params, searchParams }: {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold">{contact.full_name}</h1>
           <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
-          <form action={setContactStage.bind(null, id)} className="mt-3">
-            <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide opacity-80">
-              Stage
-              {/* key remounts the select when the server value changes (e.g. after "Log request sent"). */}
-              <AutoSubmitSelect
-                key={contact.stage}
-                name="stage"
-                defaultValue={contact.stage}
-                options={STAGES}
-                className={stageSelectProminent}
-              />
-            </label>
-          </form>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <form action={setContactStage.bind(null, id)}>
+              <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide opacity-80">
+                Stage
+                {/* key remounts the select when the server value changes (e.g. after "Log request sent"). */}
+                <AutoSubmitSelect
+                  key={contact.stage}
+                  name="stage"
+                  defaultValue={contact.stage}
+                  options={STAGES}
+                  className={stageSelectProminent}
+                />
+              </label>
+            </form>
+            <form action={setWillingToRefer.bind(null, id, !contact.willing_to_refer)}>
+              <button
+                aria-pressed={!!contact.willing_to_refer}
+                title={contact.willing_to_refer ? "Marked as willing to refer you. Click to undo." : "Star if they've said they're willing to refer you"}
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-bold ${
+                  contact.willing_to_refer
+                    ? "border-amber-500 bg-amber-500/15"
+                    : "border-black/15 opacity-80 hover:opacity-100 dark:border-white/20"
+                }`}
+              >
+                <span aria-hidden className={contact.willing_to_refer ? "text-amber-600 dark:text-amber-400" : ""}>
+                  {contact.willing_to_refer ? "★" : "☆"}
+                </span>
+                {contact.willing_to_refer ? "Willing to refer" : "Willing to refer?"}
+              </button>
+            </form>
+          </div>
         </div>
         {/* Buttons stay on one row from tablet width up; the title and company wrap instead. */}
         <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:flex-nowrap">

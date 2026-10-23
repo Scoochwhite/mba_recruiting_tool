@@ -20,7 +20,7 @@ export function ApplicationForm({
   submitLabel,
 }: {
   action: (formData: FormData) => Promise<void>;
-  contacts: { id: string; full_name: string }[];
+  contacts: { id: string; full_name: string; willing_to_refer?: boolean }[];
   application?: Application;
   submitLabel: string;
 }) {
@@ -62,6 +62,7 @@ export function ApplicationForm({
           <option value="">No referral</option>
           {contacts.map((c) => (
             <option key={c.id} value={c.id}>
+              {c.willing_to_refer ? "★ " : ""}
               {c.full_name}
             </option>
           ))}

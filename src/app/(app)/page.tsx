@@ -77,7 +77,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     // The three most recently added contacts.
     supabase
       .from("contacts")
-      .select("id, full_name, title, company, stage, created_at")
+      .select("id, full_name, title, company, stage, created_at, willing_to_refer")
       .order("created_at", { ascending: false })
       .limit(3),
   ]);
@@ -101,6 +101,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     company: string | null;
     stage: string;
     created_at: string;
+    willing_to_refer: boolean;
   }[];
 
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
@@ -278,7 +279,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               {newContacts.map((c) => (
                 <li key={c.id} className="flex items-center gap-3 py-3">
                   <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1 hover:opacity-80">
-                    <div className="font-medium">{c.full_name}</div>
+                    <div className="font-medium">
+                      {c.willing_to_refer && (
+                        <span className="mr-1 text-amber-600 dark:text-amber-400" title="Willing to refer you" aria-label="Willing to refer you">
+                          ★
+                        </span>
+                      )}
+                      {c.full_name}
+                    </div>
                     <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
                   </Link>
                   {/* A form, not part of the link, so the dropdown is clickable on its own. */}

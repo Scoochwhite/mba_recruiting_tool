@@ -5,15 +5,18 @@ import { STAGES } from "@/lib/constants";
 import { button, buttonQuiet, input } from "@/components/ui";
 
 async function ContactList({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
-  const { q, stage } = await searchParams;
+  const { q, stage, referrers } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
   const stageFilter = typeof stage === "string" ? stage : "";
+  const referrersOnly = referrers === "1";
 
   const supabase = await createClient();
   let request = supabase
     .from("contacts")
-    .select("id, full_name, company, title, stage, tags")    .order("updated_at", { ascending: false });
+    .select("id, full_name, company, title, stage, tags, willing_to_refer")
+    .order("updated_at", { ascending: false });
   if (stageFilter) request = request.eq("stage", stageFilter);
+  if (referrersOnly) request = request.eq("willing_to_refer", true);
   if (query) {
     // Strip characters that have meaning in PostgREST filter syntax.
     const term = query.replace(/[,()%*\\]/g, " ");
@@ -23,7 +26,7 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
 
   if (error) return <p className="text-sm text-red-600">Couldn&apos;t load contacts: {error.message}</p>;
   if (!contacts.length)
-    return <p className="text-sm opacity-70">{query || stageFilter ? "No matches." : "No contacts yet — add your first one."}</p>;
+    return <p className="text-sm opacity-70">{query || stageFilter || referrersOnly ? "No matches." : "No contacts yet — add your first one."}</p>;
 
   const stageName = Object.fromEntries(STAGES);
   return (
@@ -32,7 +35,14 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
         <li key={c.id}>
           <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
             <div className="flex-1">
-              <div className="font-medium">{c.full_name}</div>
+              <div className="font-medium">
+                {c.willing_to_refer && (
+                  <span className="mr-1 text-amber-600 dark:text-amber-400" title="Willing to refer you" aria-label="Willing to refer you">
+                    ★
+                  </span>
+                )}
+                {c.full_name}
+              </div>
               <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
             </div>
             {c.tags.map((t: string) => (
@@ -48,6 +58,34 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
   );
 }
 
+// The filter form keeps showing what you filtered by.
+async function Filters({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
+  const { q, stage, referrers } = await searchParams;
+  return (
+    <form className="flex flex-wrap items-center gap-2">
+      <input
+        name="q"
+        defaultValue={typeof q === "string" ? q : ""}
+        placeholder="Search name, company, title…"
+        className={`${input} min-w-48 flex-1`}
+      />
+      <select name="stage" defaultValue={typeof stage === "string" ? stage : ""} className={`${input} w-auto`}>
+        <option value="">All stages</option>
+        {STAGES.map(([value, name]) => (
+          <option key={value} value={value}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <label className="flex items-center gap-2 whitespace-nowrap text-sm">
+        <input type="checkbox" name="referrers" value="1" defaultChecked={referrers === "1"} />
+        <span className="text-amber-600 dark:text-amber-400">★</span> Willing to refer
+      </label>
+      <button className={buttonQuiet}>Filter</button>
+    </form>
+  );
+}
+
 export default function ContactsPage(props: PageProps<"/contacts">) {
   return (
     <div className="flex flex-col gap-4">
@@ -57,18 +95,9 @@ export default function ContactsPage(props: PageProps<"/contacts">) {
           Add contact
         </Link>
       </div>
-      <form className="flex gap-2">
-        <input name="q" placeholder="Search name, company, title…" className={input} />
-        <select name="stage" className={`${input} w-auto`}>
-          <option value="">All stages</option>
-          {STAGES.map(([value, name]) => (
-            <option key={value} value={value}>
-              {name}
-            </option>
-          ))}
-        </select>
-        <button className={buttonQuiet}>Filter</button>
-      </form>
+      <Suspense fallback={null}>
+        <Filters searchParams={props.searchParams} />
+      </Suspense>
       <Suspense fallback={<p className="text-sm opacity-70">Loading…</p>}>
         <ContactList searchParams={props.searchParams} />
       </Suspense>

@@ -21,7 +21,12 @@ async function Applications() {
       .from("applications")
       .select("*, referrer:contacts(full_name)")
       .order("updated_at", { ascending: false }),
-    supabase.from("contacts").select("id, full_name").order("full_name"),
+    // People willing to refer you come first in the "Referred by" list.
+    supabase
+      .from("contacts")
+      .select("id, full_name, willing_to_refer")
+      .order("willing_to_refer", { ascending: false })
+      .order("full_name"),
   ]);
   if (error) return <p className="text-sm text-red-600">Couldn&apos;t load applications: {error.message}</p>;
 
