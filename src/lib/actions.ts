@@ -87,6 +87,13 @@ async function syncBirthdayItem(
 
 // Contacts -------------------------------------------------------------------
 
+// Moving a contact to Requested or Completed counts as that milestone. Each is logged once per contact,
+// so changing the stage back and forth can't inflate your numbers.
+async function logMilestoneForStage(db: Awaited<ReturnType<typeof getDb>>, contactId: string, stage: string) {
+  if (stage === "requested") await recordMilestone(db, contactId, "info_interview_request");
+  else if (stage === "completed") await recordMilestone(db, contactId, "info_interview_completed");
+}
+
 export async function createContact(formData: FormData) {
   const db = await getDb();
   const fields = contactFields(formData);
@@ -96,30 +103,38 @@ export async function createContact(formData: FormData) {
     redirect(`/contacts/new?error=${encodeURIComponent(msg)}`);
   }
   if (fields.birthday) await syncBirthdayItem(db, data.id, fields.full_name, fields.birthday, null);
+  await logMilestoneForStage(db, data.id, fields.stage);
   revalidatePath("/contacts");
+  revalidatePath("/actions");
+  revalidatePath("/");
   redirect(`/contacts/${data.id}`);
 }
 
 export async function updateContact(id: string, formData: FormData) {
   const db = await getDb();
   const fields = contactFields(formData);
-  const { data: before } = await db.from("contacts").select("birthday, full_name").eq("id", id).single();
+  const { data: before } = await db.from("contacts").select("birthday, full_name, stage").eq("id", id).single();
   const { error } = await db.from("contacts").update(fields).eq("id", id);
   if (error) redirect(`/contacts/${id}?error=${encodeURIComponent(error.message)}`);
   await syncBirthdayItem(db, id, fields.full_name, fields.birthday, before);
+  if (before?.stage !== fields.stage) await logMilestoneForStage(db, id, fields.stage);
   revalidatePath("/contacts");
+  revalidatePath("/actions");
+  revalidatePath("/");
   redirect(`/contacts/${id}`);
 }
 
 // Sets a contact's stage directly (the quick dropdown on the contact page and dashboard).
-// It only changes the stage; KPI counts come from the explicit "Log request sent / interview done" buttons.
+// Moving to Requested or Completed also logs that milestone (once per contact).
 export async function setContactStage(id: string, formData: FormData) {
   const stage = text(formData, "stage");
   if (!STAGES.some(([value]) => value === stage)) return;
   const db = await getDb();
   await db.from("contacts").update({ stage }).eq("id", id);
+  await logMilestoneForStage(db, id, stage as string);
   revalidatePath(`/contacts/${id}`);
   revalidatePath("/contacts");
+  revalidatePath("/actions");
   revalidatePath("/");
 }
 
