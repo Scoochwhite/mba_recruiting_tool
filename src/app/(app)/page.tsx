@@ -7,6 +7,7 @@ import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
+import { KpiCard, type KpiItem } from "@/components/kpi-card";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { button, input, label, stageSelectCompact } from "@/components/ui";
 import { DateInput } from "@/components/date-input";
@@ -34,7 +35,9 @@ type Activity = {
   kind: string;
   occurred_on: string;
   note: string | null;
-  contacts: { full_name: string } | null;
+  contact_id: string | null;
+  application_id: string | null;
+  contacts: { full_name: string; title: string | null; company: string | null } | null;
   applications: { company: string; role: string } | null;
 };
 
@@ -60,12 +63,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     supabase.from("weekly_goal_snapshots").select("week_start, goals").order("week_start"),
     supabase
       .from("activities")
-      .select("id, kind, occurred_on, note, contacts(full_name), applications(company, role)")
+      .select(
+        "id, kind, occurred_on, note, contact_id, application_id, contacts(full_name, title, company), applications(company, role)",
+      )
       .gte("occurred_on", weekStart)
       .lte("occurred_on", weekEnd)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(50),
+      .limit(500),
     // Open items that are overdue or due within the next 7 days.
     supabase
       .from("action_items")
@@ -103,6 +108,32 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     created_at: string;
     willing_to_refer: boolean;
   }[];
+
+  // Who or what is behind each KPI number this week, newest first (the query is already ordered).
+  const activityRows = (recent.data ?? []) as unknown as Activity[];
+  const detailsByKind = new Map<string, KpiItem[]>();
+  for (const a of activityRows) {
+    const item: KpiItem = a.contacts
+      ? {
+          id: a.id,
+          date: formatShortDate(a.occurred_on),
+          name: a.contacts.full_name,
+          sub: [a.contacts.title, a.contacts.company].filter(Boolean).join(" · ") || undefined,
+          note: a.note ?? undefined,
+          href: `/contacts/${a.contact_id}`,
+        }
+      : a.applications
+        ? {
+            id: a.id,
+            date: formatShortDate(a.occurred_on),
+            name: a.applications.company,
+            sub: a.applications.role,
+            note: a.note ?? undefined,
+            href: "/applications",
+          }
+        : { id: a.id, date: formatShortDate(a.occurred_on), name: "Logged manually", note: a.note ?? undefined };
+    detailsByKind.set(a.kind, [...(detailsByKind.get(a.kind) ?? []), item]);
+  }
 
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
   const overdue = dueItems.filter((i) => i.due_date! < todayStr);
@@ -186,21 +217,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           const total = totals.get(kind) ?? 0;
           const goal = goals[kind];
           return (
-            <div key={kind} className="rounded-lg border border-black/10 bg-lavender/40 p-4 dark:border-white/15 dark:bg-white/5">
-              <div className="text-sm opacity-70">{name}</div>
-              <div className="mt-1 text-3xl font-black text-navy dark:text-white">
-                {total}
-                {goal ? <span className="text-base font-normal opacity-50"> / {goal}</span> : null}
-              </div>
-              {goal ? (
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/15">
-                  <div
-                    className="h-full bg-ocean"
-                    style={{ width: `${Math.min(100, (total / goal) * 100)}%` }}
-                  />
-                </div>
-              ) : null}
-            </div>
+            <KpiCard
+              key={kind}
+              label={name}
+              total={total}
+              goal={goal}
+              items={detailsByKind.get(kind) ?? []}
+              period={formatWeek(weekStart)}
+            />
           );
         })}
         <div className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
