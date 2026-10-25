@@ -1,10 +1,18 @@
-// Dates are plain "YYYY-MM-DD" strings (Postgres `date`). "Today" is computed in a
-// fixed timezone so server-rendered pages agree with the user's calendar day.
-// TODO: make the timezone a per-user profile setting.
-const TIMEZONE = "America/Denver";
+// Dates are plain "YYYY-MM-DD" strings (Postgres `date`). "Today" is computed in the user's own
+// time zone (a Settings choice) so server-rendered pages agree with their calendar day.
+export const DEFAULT_TIMEZONE = "America/Denver";
 
-export function today(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+export function isValidTimezone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function today(timeZone: string = DEFAULT_TIMEZONE): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone });
 }
 
 export function addDays(date: string, days: number): string {
@@ -34,10 +42,10 @@ export function formatDate(date: string): string {
   });
 }
 
-// Sunday of the week containing `date` (weeks run Sunday through Saturday).
-export function startOfWeek(date: string): string {
+// First day of the week containing `date`: weekStart 0 = Sunday (default), 1 = Monday.
+export function startOfWeek(date: string, weekStart: 0 | 1 = 0): string {
   const day = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 = Sunday
-  return addDays(date, -day);
+  return addDays(date, -((day - weekStart + 7) % 7));
 }
 
 export function startOfMonth(date: string): string {
@@ -64,7 +72,7 @@ export function formatShortDate(date: string): string {
   });
 }
 
-// The calendar day ("YYYY-MM-DD") of a timestamp, in the app's timezone.
-export function dateOf(timestamp: string): string {
-  return new Date(timestamp).toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+// The calendar day ("YYYY-MM-DD") of a timestamp, in the given time zone.
+export function dateOf(timestamp: string, timeZone: string = DEFAULT_TIMEZONE): string {
+  return new Date(timestamp).toLocaleDateString("en-CA", { timeZone });
 }

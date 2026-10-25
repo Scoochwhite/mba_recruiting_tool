@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { loadSettings } from "@/lib/settings";
 import {
   addNote,
   deleteContact,
@@ -28,7 +29,7 @@ async function ContactDetail({ params, searchParams }: {
   const { error } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: contact }, { data: notes }, { data: items }, { data: milestones }] = await Promise.all([
+  const [{ data: contact }, { data: notes }, { data: items }, { data: milestones }, settings] = await Promise.all([
     supabase.from("contacts").select("*").eq("id", id).maybeSingle(),
     supabase.from("contact_notes").select("id, body, created_at").eq("contact_id", id).order("created_at", { ascending: false }),
     supabase
@@ -42,9 +43,10 @@ async function ContactDetail({ params, searchParams }: {
       .select("kind, occurred_on")
       .eq("contact_id", id)
       .in("kind", ["info_interview_request", "info_interview_completed"]),
+    loadSettings(supabase),
   ]);
   if (!contact) notFound();
-  const todayStr = today();
+  const todayStr = today(settings.timezone);
   const logged = new Map((milestones ?? []).map((m) => [m.kind as string, m.occurred_on as string]));
 
   return (
@@ -143,7 +145,7 @@ async function ContactDetail({ params, searchParams }: {
         {notes?.map((note) => (
           <article key={note.id} className="rounded-md border border-black/10 p-3 dark:border-white/15">
             <div className="mb-1 flex items-center justify-between text-xs opacity-70">
-              <time>{new Date(note.created_at).toLocaleString("en-US", { timeZone: "America/Denver" })}</time>
+              <time>{new Date(note.created_at).toLocaleString("en-US", { timeZone: settings.timezone })}</time>
               <form action={deleteNote.bind(null, id, note.id)}>
                 <button className="hover:opacity-100">Delete</button>
               </form>

@@ -185,7 +185,7 @@ function setupMessage(settings) {
     setTimeout(() => ($("copy").textContent = "Copy message"), 1500);
   });
 
-  $("edit-template").href = APP_URL + "/extension#message";
+  $("edit-template").href = APP_URL + "/settings#message";
   $("name-hint").hidden = !!settings.my_name;
   $("message-section").hidden = false;
   refresh();

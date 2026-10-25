@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addActivity, createContact, deleteActivity, saveGoals, setContactStage } from "@/lib/actions";
 import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
+import { loadSettings } from "@/lib/settings";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
@@ -46,10 +47,11 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
 
   // Create the client first: it opts this render out of prerendering, which today() needs.
   const supabase = await createClient();
-  const todayStr = today();
-  const thisWeek = startOfWeek(todayStr);
+  const settings = await loadSettings(supabase);
+  const todayStr = today(settings.timezone);
+  const thisWeek = startOfWeek(todayStr, settings.weekStart);
   // ?week=YYYY-MM-DD picks a past week; anything invalid or in the future falls back to this week.
-  const requested = typeof weekParam === "string" && /^\d{4}-\d{2}-\d{2}$/.test(weekParam) ? startOfWeek(weekParam) : thisWeek;
+  const requested = typeof weekParam === "string" && /^\d{4}-\d{2}-\d{2}$/.test(weekParam) ? startOfWeek(weekParam, settings.weekStart) : thisWeek;
   const weekStart = requested > thisWeek ? thisWeek : requested;
   const weekEnd = addDays(weekStart, 6);
   const isCurrent = weekStart === thisWeek;
@@ -324,7 +326,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                         className={stageSelectCompact}
                       />
                     </form>
-                    <span className="text-xs opacity-70">Added {formatShortDate(dateOf(c.created_at))}</span>
+                    <span className="text-xs opacity-70">Added {formatShortDate(dateOf(c.created_at, settings.timezone))}</span>
                   </div>
                 </li>
               ))}

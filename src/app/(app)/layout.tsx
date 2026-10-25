@@ -11,6 +11,7 @@ const menuLinks = [
   ["/actions", "Action items"],
   ["/history", "History"],
   ["/extension", "Extension"],
+  ["/settings", "Settings"],
 ] as const;
 
 export default function AppLayout({ children }: LayoutProps<"/">) {

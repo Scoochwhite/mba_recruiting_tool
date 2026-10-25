@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { loadSettings } from "@/lib/settings";
 import { addDays, today } from "@/lib/dates";
 import { EditDialog } from "@/components/edit-dialog";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
@@ -13,7 +14,7 @@ async function Items() {
   if (error) return <p className="text-sm text-red-600">Couldn&apos;t load action items: {error.message}</p>;
 
   const items = data as unknown as ActionItem[];
-  const todayStr = today();
+  const todayStr = today((await loadSettings(supabase)).timezone);
   const weekEnd = addDays(todayStr, 7);
   const open = items.filter((i) => !i.completed_at);
   const groups: [string, ActionItem[]][] = [

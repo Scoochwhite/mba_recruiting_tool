@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { addRecurrence, nextBirthday, startOfWeek, today } from "@/lib/dates";
-import { recordMilestone, type Milestone } from "@/lib/milestones";
+import { addRecurrence, isValidTimezone, nextBirthday, startOfWeek, today } from "@/lib/dates";
+import { clearFollowUp, recordMilestone, type Milestone } from "@/lib/milestones";
+import { loadSettings } from "@/lib/settings";
 import {
   STAGES,
   RECURRENCES,
@@ -19,6 +20,11 @@ async function getDb() {
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) throw new Error("Not signed in");
   return supabase;
+}
+
+// Today's date in the signed-in user's time zone (a Settings choice).
+async function todayFor(db: Awaited<ReturnType<typeof getDb>>): Promise<string> {
+  return today((await loadSettings(db)).timezone);
 }
 
 function text(formData: FormData, key: string): string | null {
@@ -58,6 +64,8 @@ async function syncBirthdayItem(
   birthday: string | null,
   before: { birthday: string | null; full_name: string } | null,
 ) {
+  const settings = await loadSettings(db);
+  if (!settings.birthdayReminders) return; // turned off in Settings
   const title = `Wish ${fullName} a happy birthday`;
   const { data: open } = await db
     .from("action_items")
@@ -75,7 +83,7 @@ async function syncBirthdayItem(
     if (open) await db.from("action_items").delete().eq("id", open.id);
     return;
   }
-  const due_date = nextBirthday(birthday, today());
+  const due_date = nextBirthday(birthday, today(settings.timezone));
   if (open) {
     await db.from("action_items").update({ title, due_date }).eq("id", open.id);
   } else {
@@ -92,6 +100,8 @@ async function syncBirthdayItem(
 async function logMilestoneForStage(db: Awaited<ReturnType<typeof getDb>>, contactId: string, stage: string) {
   if (stage === "requested") await recordMilestone(db, contactId, "info_interview_request");
   else if (stage === "completed") await recordMilestone(db, contactId, "info_interview_completed");
+  // Scheduled means they replied, so the "no reply yet" follow-up is no longer needed.
+  if (stage === "scheduled") await clearFollowUp(db, contactId);
 }
 
 export async function createContact(formData: FormData) {
@@ -291,7 +301,7 @@ async function logActivity(
 export async function createApplication(formData: FormData) {
   const db = await getDb();
   const fields = applicationFields(formData);
-  if (fields.status !== "wishlist" && !fields.applied_on) fields.applied_on = today();
+  if (fields.status !== "wishlist" && !fields.applied_on) fields.applied_on = await todayFor(db);
   const { data, error } = await db.from("applications").insert(fields).select("id").single();
   if (error) throw new Error(error.message);
   // Anything past the wishlist counts as a submitted application.
@@ -318,14 +328,15 @@ async function saveApplication(db: Db, id: string, fields: Record<string, unknow
   const { data: before } = await db.from("applications").select("status, applied_on").eq("id", id).single();
   if (!before) return;
   const submitting = before.status === "wishlist" && fields.status && fields.status !== "wishlist";
-  if (submitting && !fields.applied_on && !before.applied_on) fields.applied_on = today();
+  const todayStr = await todayFor(db);
+  if (submitting && !fields.applied_on && !before.applied_on) fields.applied_on = todayStr;
 
   const { error } = await db.from("applications").update(fields).eq("id", id);
   if (error) throw new Error(error.message);
   if (submitting) {
     await logActivity(db, "application_submitted", {
       application_id: id,
-      occurred_on: fields.applied_on ?? before.applied_on ?? today(),
+      occurred_on: fields.applied_on ?? before.applied_on ?? todayStr,
     });
   }
   revalidatePath("/applications");
@@ -351,7 +362,7 @@ export async function logInterview(applicationId: string) {
 export async function addActivity(formData: FormData) {
   const db = await getDb();
   await logActivity(db, oneOf(text(formData, "kind"), ACTIVITY_KINDS, "mock_interview"), {
-    occurred_on: text(formData, "occurred_on") ?? today(),
+    occurred_on: text(formData, "occurred_on") ?? (await todayFor(db)),
     note: text(formData, "note"),
   });
   revalidatePath("/");
@@ -376,6 +387,7 @@ export async function logContactActivity(contactId: string, kind: Milestone) {
 export async function saveGoals(formData: FormData) {
   const db = await getDb();
   const { data } = await db.auth.getClaims();
+  const settings = await loadSettings(db);
   const goals: Record<string, number> = {};
   for (const [kind] of ACTIVITY_KINDS) {
     const n = Number.parseInt(text(formData, kind) ?? "", 10);
@@ -385,7 +397,10 @@ export async function saveGoals(formData: FormData) {
   // Goals apply from this week forward; earlier weeks keep the goals they were judged against.
   await db
     .from("weekly_goal_snapshots")
-    .upsert({ week_start: startOfWeek(today()), goals }, { onConflict: "user_id,week_start" });
+    .upsert(
+      { week_start: startOfWeek(today(settings.timezone), settings.weekStart), goals },
+      { onConflict: "user_id,week_start" },
+    );
   revalidatePath("/");
   revalidatePath("/history");
 }
@@ -403,6 +418,82 @@ export async function saveMessageSettings(formData: FormData) {
     })
     .eq("id", data!.claims.sub);
   revalidatePath("/extension");
+}
+
+// Settings page ----------------------------------------------------------------
+
+// Saves one or more profile settings. Throws on failure so the switch or select can show it and revert.
+async function updateProfile(patch: Record<string, unknown>) {
+  const db = await getDb();
+  const { data } = await db.auth.getClaims();
+  const { error } = await db.from("profiles").update(patch).eq("id", data!.claims.sub);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout"); // time zone and week start affect every page
+}
+
+export async function setTimezone(timeZone: string) {
+  if (!isValidTimezone(timeZone)) throw new Error("Unknown time zone");
+  await updateProfile({ timezone: timeZone });
+}
+
+export async function setWeekStart(day: number) {
+  if (day !== 0 && day !== 1) throw new Error("Week must start on Sunday or Monday");
+  await updateProfile({ week_start: day });
+}
+
+export async function setAutoThankYou(value: boolean) {
+  await updateProfile({ auto_thank_you: value });
+}
+
+export async function setThankYouDays(days: number) {
+  if (!Number.isInteger(days) || days < 0 || days > 14) throw new Error("Out of range");
+  await updateProfile({ thank_you_days: days });
+}
+
+export async function setFollowUpDays(days: number) {
+  if (!Number.isInteger(days) || days < 0 || days > 30) throw new Error("Out of range");
+  await updateProfile({ follow_up_days: days });
+}
+
+// Turning birthday reminders off removes the open ones; turning them on adds one for every contact
+// with a birthday that doesn't have one yet.
+export async function setBirthdayReminders(on: boolean) {
+  await updateProfile({ birthday_reminders: on });
+  const db = await getDb();
+  if (!on) {
+    await db.from("action_items").delete().eq("source", "birthday").is("completed_at", null);
+    return;
+  }
+  const todayStr = await todayFor(db);
+  const [{ data: contacts }, { data: open }] = await Promise.all([
+    db.from("contacts").select("id, full_name, birthday").not("birthday", "is", null),
+    db.from("action_items").select("contact_id").eq("source", "birthday").is("completed_at", null),
+  ]);
+  const have = new Set((open ?? []).map((item) => item.contact_id));
+  const rows = (contacts ?? [])
+    .filter((c) => !have.has(c.id))
+    .map((c) => ({
+      contact_id: c.id,
+      title: `Wish ${c.full_name} a happy birthday`,
+      due_date: nextBirthday(c.birthday, todayStr),
+      recurrence: "yearly",
+      source: "birthday",
+    }));
+  if (rows.length) await db.from("action_items").insert(rows);
+}
+
+// Permanently deletes the account and everything in it. Requires typing DELETE.
+export async function deleteAccount(formData: FormData) {
+  if (text(formData, "confirm") !== "DELETE") redirect("/settings?error=Type%20DELETE%20to%20confirm");
+  const db = await getDb();
+  const { error } = await db.rpc("delete_my_account");
+  if (error) redirect(`/settings?error=${encodeURIComponent(error.message)}`);
+  try {
+    await db.auth.signOut();
+  } catch {
+    // The account is already gone; the session cookie is cleared either way.
+  }
+  redirect("/login");
 }
 
 export async function signOut() {

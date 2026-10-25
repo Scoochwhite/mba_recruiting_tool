@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { loadSettings } from "@/lib/settings";
 import {
   createApplication,
   deleteApplication,
@@ -30,7 +31,8 @@ async function Applications() {
   ]);
   if (error) return <p className="text-sm text-red-600">Couldn&apos;t load applications: {error.message}</p>;
 
-  const todayStr = today();
+  const settings = await loadSettings(supabase);
+  const todayStr = today(settings.timezone);
   const people = contacts ?? [];
   const byStatus = new Map<string, typeof apps>();
   for (const app of apps) byStatus.set(app.status, [...(byStatus.get(app.status) ?? []), app]);

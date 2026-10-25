@@ -1,8 +1,5 @@
-import { Suspense } from "react";
+import Link from "next/link";
 import manifest from "../../../../extension/manifest.json";
-import { MessageTemplateEditor } from "@/components/message-template-editor";
-import { DEFAULT_TEMPLATE } from "@/lib/message";
-import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Install the Chrome extension – MBA Recruiting Tool" };
 
@@ -57,18 +54,6 @@ const steps: { title: string; body: React.ReactNode }[] = [
   },
 ];
 
-async function MessageSection() {
-  const supabase = await createClient();
-  const { data: profile } = await supabase.from("profiles").select("display_name, message_template").maybeSingle();
-  const name = profile?.display_name ?? "";
-  return (
-    <MessageTemplateEditor
-      template={profile?.message_template || DEFAULT_TEMPLATE}
-      myName={name.includes("@") ? "" : name}
-    />
-  );
-}
-
 export default function ExtensionPage() {
   return (
     <div className="flex flex-col gap-8">
@@ -96,15 +81,16 @@ export default function ExtensionPage() {
         </ol>
       </section>
 
-      <section id="message" className="flex scroll-mt-6 flex-col gap-3 text-sm">
+      <section id="message" className="flex scroll-mt-6 flex-col gap-2 text-sm">
         <h2 className="text-lg font-semibold">Outreach message</h2>
         <p className="opacity-70">
-          When you open someone&apos;s LinkedIn profile, the extension drafts this message with their first name and
-          company filled in, ready to copy and paste. Write it once here.
+          When you open someone&apos;s LinkedIn profile, the extension drafts a message with their first name and
+          company filled in, ready to copy and paste.{" "}
+          <Link href="/settings#message" className="text-blue-600 underline">
+            Edit your message in Settings
+          </Link>
+          .
         </p>
-        <Suspense fallback={<p className="opacity-70">Loading…</p>}>
-          <MessageSection />
-        </Suspense>
       </section>
 
       <section className="flex flex-col gap-2 text-sm">

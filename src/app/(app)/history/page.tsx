@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { loadSettings } from "@/lib/settings";
 import { ACTIVITY_KINDS } from "@/lib/constants";
 import { addDays, formatDate, startOfWeek, today } from "@/lib/dates";
 
@@ -9,11 +10,12 @@ type Snapshot = { week_start: string; goals: Record<string, number> };
 
 async function History() {
   const supabase = await createClient(); // first: opts this render out of prerendering for today()
-  const thisWeek = startOfWeek(today());
+  const settings = await loadSettings(supabase);
+  const thisWeek = startOfWeek(today(settings.timezone), settings.weekStart);
   const oldest = addDays(thisWeek, -7 * (WEEKS - 1));
 
   const [counts, snapshots] = await Promise.all([
-    supabase.rpc("weekly_kpi_counts", { from_date: oldest }),
+    supabase.rpc("weekly_kpi_counts", { from_date: oldest, week_start_day: settings.weekStart }),
     supabase.from("weekly_goal_snapshots").select("week_start, goals").order("week_start"),
   ]);
   const error = counts.error ?? snapshots.error;
