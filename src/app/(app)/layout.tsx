@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CelebrationHost } from "@/components/celebration";
 import { NavMenu } from "@/components/nav-menu";
 
 const mainLinks = [
@@ -34,6 +35,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <div className="mx-auto w-full min-w-0 max-w-4xl flex-1 p-4 sm:p-6">{children}</div>
+      <CelebrationHost />
     </>
   );
 }

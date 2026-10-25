@@ -5,6 +5,7 @@ import { addActivity, createContact, deleteActivity, saveGoals, setContactStage 
 import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { loadSettings } from "@/lib/settings";
+import { GoalWatcher } from "@/components/celebration";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
@@ -149,6 +150,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
 
   return (
     <div className="flex flex-col gap-4">
+      <GoalWatcher
+        weekStart={weekStart}
+        isCurrentWeek={isCurrent}
+        progress={ACTIVITY_KINDS.map(([kind, name]) => ({
+          kind,
+          label: name,
+          goal: goals[kind] ?? 0,
+          total: totals.get(kind) ?? 0,
+        }))}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-2">

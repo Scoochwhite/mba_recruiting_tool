@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CelebrationSetting } from "@/components/celebration";
 import { DeleteAccount } from "@/components/delete-account";
 import { MessageTemplateEditor } from "@/components/message-template-editor";
 import { SelectSetting, type Option } from "@/components/select-setting";
@@ -76,6 +77,7 @@ async function SettingsForm({ searchParams }: { searchParams: PageProps<"/settin
           </div>
           <ThemeChoice />
         </div>
+        <CelebrationSetting />
       </Section>
 
       <Section title="Dates and time">
