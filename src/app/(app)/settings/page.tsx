@@ -85,7 +85,7 @@ async function SettingsForm({ searchParams }: { searchParams: PageProps<"/settin
           description="Used for the dashboard's weekly numbers, weekly goals, and the History page."
           value={String(settings.weekStart)}
           options={WEEK_START}
-          action={(day) => setWeekStart(Number(day))}
+          action={setWeekStart}
         />
       </Section>
 
@@ -101,14 +101,14 @@ async function SettingsForm({ searchParams }: { searchParams: PageProps<"/settin
           description="How long after the interview. Only used when thank-you reminders are on."
           value={String(settings.thankYouDays)}
           options={withValue(THANK_YOU_TIMING, settings.thankYouDays, `${settings.thankYouDays} days later`)}
-          action={(days) => setThankYouDays(Number(days))}
+          action={setThankYouDays}
         />
         <SelectSetting
           title="Follow-up reminders"
           description="After you log a request, add an action item to follow up if you haven't heard back. It goes away on its own once the interview is scheduled or done."
           value={String(settings.followUpDays)}
           options={withValue(FOLLOW_UP_TIMING, settings.followUpDays, `After ${settings.followUpDays} days`)}
-          action={(days) => setFollowUpDays(Number(days))}
+          action={setFollowUpDays}
         />
         <SwitchSetting
           title="Birthday reminders"

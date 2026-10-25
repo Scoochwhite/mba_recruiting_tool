@@ -436,7 +436,8 @@ export async function setTimezone(timeZone: string) {
   await updateProfile({ timezone: timeZone });
 }
 
-export async function setWeekStart(day: number) {
+export async function setWeekStart(value: string) {
+  const day = Number(value);
   if (day !== 0 && day !== 1) throw new Error("Week must start on Sunday or Monday");
   await updateProfile({ week_start: day });
 }
@@ -445,12 +446,14 @@ export async function setAutoThankYou(value: boolean) {
   await updateProfile({ auto_thank_you: value });
 }
 
-export async function setThankYouDays(days: number) {
+export async function setThankYouDays(value: string) {
+  const days = Number(value);
   if (!Number.isInteger(days) || days < 0 || days > 14) throw new Error("Out of range");
   await updateProfile({ thank_you_days: days });
 }
 
-export async function setFollowUpDays(days: number) {
+export async function setFollowUpDays(value: string) {
+  const days = Number(value);
   if (!Number.isInteger(days) || days < 0 || days > 30) throw new Error("Out of range");
   await updateProfile({ follow_up_days: days });
 }
