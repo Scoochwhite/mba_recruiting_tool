@@ -249,6 +249,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         </div>
       </section>
 
+      <hr className="border-black/10 dark:border-white/15" />
+
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Action items</h2>
@@ -269,26 +271,33 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
             </div>
           ))}
         </div>
-        {dueItems.length ? (
-          <>
-            <ul className="divide-y divide-black/10 dark:divide-white/15">
-              {dueItems.slice(0, 6).map((item) => (
-                <ActionRow key={item.id} item={item} today={todayStr} />
-              ))}
-            </ul>
-            {dueItems.length > 6 && (
-              <Link href="/actions" className="text-sm opacity-70 hover:underline">
-                + {dueItems.length - 6} more
-              </Link>
-            )}
-          </>
-        ) : (
-          <p className="text-sm opacity-70">Nothing overdue or due in the next 7 days.</p>
-        )}
+        {/* Room for 3 items and the "more" link, so the sections below stay put whether there are 0 or 3. */}
+        <div className="min-h-[9.75rem]">
+          {dueItems.length ? (
+            <>
+              <ul className="divide-y divide-black/10 dark:divide-white/15">
+                {dueItems.slice(0, 3).map((item) => (
+                  <ActionRow key={item.id} item={item} today={todayStr} />
+                ))}
+              </ul>
+              {dueItems.length > 3 && (
+                <Link href="/actions" className="text-sm opacity-70 hover:underline">
+                  + {dueItems.length - 3} more
+                </Link>
+              )}
+            </>
+          ) : (
+            <p className="text-sm opacity-70">Nothing overdue or due in the next 7 days.</p>
+          )}
+        </div>
       </section>
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <section className="flex min-w-0 flex-col gap-3">
+      <hr className="border-black/10 dark:border-white/15" />
+
+      {/* Two columns with a line between them. The activity list is held to the height of the contacts
+          column (h-0 + min-h-full) and scrolls inside it, so a busy week doesn't stretch the page. */}
+      <div className="grid gap-8 md:grid-cols-2 md:gap-0">
+        <section className="flex min-w-0 flex-col gap-3 md:min-h-[18rem] md:pr-8">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Recently added contacts</h2>
             <div className="flex items-center gap-3">
@@ -336,37 +345,41 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           )}
         </section>
 
-        <section className="flex min-w-0 flex-col gap-3">
-          <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
-          {recent.data?.length ? (
-            <ul className="divide-y divide-black/10 dark:divide-white/15">
-              {(recent.data as unknown as Activity[]).map((a) => {
-                const who =
-                  a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
-                return (
-                  <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
-                    <span className="w-14 shrink-0 text-xs opacity-70">{formatShortDate(a.occurred_on)}</span>
-                    <span className="flex-1">
-                      {SINGULAR[a.kind]}
-                      {who && <span className="opacity-70"> · {who}</span>}
-                      {a.note && <span className="opacity-70"> · {a.note}</span>}
-                    </span>
-                    <form action={deleteActivity.bind(null, a.id)}>
-                      <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
-                        ✕
-                      </button>
-                    </form>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm opacity-70">
-              {isCurrent
-                ? "Nothing logged yet this week. Activity is logged when you use the buttons on a contact, move an application off the wishlist, or click Log activity."
-                : "Nothing was logged this week."}
-            </p>
-          )}
+        <section className="flex min-w-0 flex-col gap-3 border-black/10 dark:border-white/15 max-md:border-t max-md:pt-8 md:h-0 md:min-h-full md:border-l md:pl-8">
+          <div className="flex min-h-[3.125rem] items-center">
+            <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto max-md:max-h-80">
+            {recent.data?.length ? (
+              <ul className="divide-y divide-black/10 dark:divide-white/15">
+                {(recent.data as unknown as Activity[]).map((a) => {
+                  const who =
+                    a.contacts?.full_name ?? (a.applications && `${a.applications.company} — ${a.applications.role}`);
+                  return (
+                    <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
+                      <span className="w-14 shrink-0 text-xs opacity-70">{formatShortDate(a.occurred_on)}</span>
+                      <span className="flex-1">
+                        {SINGULAR[a.kind]}
+                        {who && <span className="opacity-70"> · {who}</span>}
+                        {a.note && <span className="opacity-70"> · {a.note}</span>}
+                      </span>
+                      <form action={deleteActivity.bind(null, a.id)}>
+                        <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
+                          ✕
+                        </button>
+                      </form>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm opacity-70">
+                {isCurrent
+                  ? "Nothing logged yet this week. Activity is logged when you use the buttons on a contact, move an application off the wishlist, or click Log activity."
+                  : "Nothing was logged this week."}
+              </p>
+            )}
+          </div>
         </section>
       </div>
     </div>

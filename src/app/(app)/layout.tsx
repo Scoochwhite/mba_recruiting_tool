@@ -19,7 +19,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <>
       {/* Phones: title and Menu on the first row, links on a second row. From sm up: one row. */}
       <header className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-navy px-4 py-3 text-white shadow-sm sm:px-6">
-        <span className="whitespace-nowrap text-lg font-black tracking-tight">MBA Recruiting Tool</span>
+        <Link href="/" className="whitespace-nowrap text-lg font-black tracking-tight hover:opacity-90">
+          MBA Recruiting Tool
+        </Link>
         <nav className="order-last flex w-full gap-4 text-sm sm:order-none sm:w-auto sm:flex-1">
           {mainLinks.map(([href, name]) => (
             <Link key={href} href={href} className="text-white/80 hover:text-white">
