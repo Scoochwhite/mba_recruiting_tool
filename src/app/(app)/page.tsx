@@ -148,7 +148,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   ] as const;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -296,8 +296,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
 
       {/* Two columns with a line between them. The activity list is held to the height of the contacts
           column (h-0 + min-h-full) and scrolls inside it, so a busy week doesn't stretch the page. */}
-      <div className="grid gap-8 md:grid-cols-2 md:gap-0">
-        <section className="flex min-w-0 flex-col gap-3 md:min-h-[18rem] md:pr-8">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-0">
+        <section className="flex min-w-0 flex-col gap-3 md:min-h-[14rem] md:pr-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Recently added contacts</h2>
             <div className="flex items-center gap-3">
@@ -345,7 +345,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           )}
         </section>
 
-        <section className="flex min-w-0 flex-col gap-3 border-black/10 dark:border-white/15 max-md:border-t max-md:pt-8 md:h-0 md:min-h-full md:border-l md:pl-8">
+        <section className="flex min-w-0 flex-col gap-3 border-black/10 dark:border-white/15 max-md:border-t max-md:pt-4 md:h-0 md:min-h-full md:border-l md:pl-6">
           <div className="flex min-h-[3.125rem] items-center">
             <h2 className="text-lg font-semibold">{isCurrent ? "Activity this week" : `Activity, week of ${formatDate(weekStart)}`}</h2>
           </div>
