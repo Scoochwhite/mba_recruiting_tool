@@ -11,6 +11,7 @@ import {
 import { APPLICATION_STATUSES } from "@/lib/constants";
 import { formatDate, today } from "@/lib/dates";
 import { ApplicationForm } from "@/components/application-form";
+import { PageTip } from "@/components/tour";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { EditDialog } from "@/components/edit-dialog";
 import { buttonQuiet, inputAuto } from "@/components/ui";
@@ -45,6 +46,10 @@ async function Applications() {
           <ApplicationForm action={createApplication} contacts={people} submitLabel="Save application" />
         </EditDialog>
       </div>
+      <PageTip id="applications">
+        <strong>Tip:</strong> moving an application off the Wishlist counts it as submitted. Use Log interview each time
+        you interview.
+      </PageTip>
       {apps.length === 0 && <p className="text-sm opacity-70">No applications yet.</p>}
       {APPLICATION_STATUSES.map(([status, name]) => {
         const list = byStatus.get(status) ?? [];

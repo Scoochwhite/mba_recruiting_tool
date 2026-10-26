@@ -54,6 +54,13 @@ export async function GET(request: Request) {
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims) return reply(request, { error: "unauthorized" }, 401);
 
+  // Remember the first time the extension talks to the app (this feeds the Getting started checklist).
+  await supabase
+    .from("profiles")
+    .update({ extension_used_at: new Date().toISOString() })
+    .eq("id", claims.claims.sub)
+    .is("extension_used_at", null);
+
   const escaped = slug.replace(/[\\%_]/g, (c) => `\\${c}`);
   const { data } = await supabase
     .from("contacts")

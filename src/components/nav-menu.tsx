@@ -1,13 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "@/lib/actions";
+import { TOUR_VERSION } from "@/lib/tour";
+import { startTour, type TourMode } from "./tour";
 
 // Top-right dropdown holding the less-used pages and Sign out.
 export function NavMenu({ links }: { links: readonly (readonly [string, string])[] }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // The tour lives on the dashboard, so from another page this goes there first. (The page is read at click
+  // time, not with usePathname, which isn't allowed here for pages like a single contact's.)
+  const replay = (mode: TourMode) => {
+    setOpen(false);
+    startTour(mode);
+    if (window.location.pathname !== "/") router.push("/");
+  };
 
   // Close on outside click or Escape.
   useEffect(() => {
@@ -47,6 +59,15 @@ export function NavMenu({ links }: { links: readonly (readonly [string, string])
               {name}
             </Link>
           ))}
+          <hr className="my-1 border-black/10 dark:border-white/15" />
+          <button type="button" role="menuitem" onClick={() => replay("all")} className={item}>
+            Take the tour
+          </button>
+          {TOUR_VERSION > 1 && (
+            <button type="button" role="menuitem" onClick={() => replay("new")} className={item}>
+              What&apos;s new
+            </button>
+          )}
           <hr className="my-1 border-black/10 dark:border-white/15" />
           <form action={signOut}>
             <button role="menuitem" className={item}>

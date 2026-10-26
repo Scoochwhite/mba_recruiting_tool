@@ -5,6 +5,7 @@ import { MessageTemplateEditor } from "@/components/message-template-editor";
 import { SelectSetting, type Option } from "@/components/select-setting";
 import { SwitchSetting } from "@/components/switch-setting";
 import { ThemeChoice } from "@/components/theme";
+import { PageTip } from "@/components/tour";
 import { TimezoneSetting } from "@/components/timezone-setting";
 import {
   setAutoThankYou,
@@ -160,6 +161,9 @@ export default function SettingsPage(props: PageProps<"/settings">) {
   return (
     <div className="flex max-w-2xl flex-col gap-8">
       <h1 className="text-2xl font-semibold">Settings</h1>
+      <PageTip id="settings">
+        <strong>Tip:</strong> set your time zone first, so &quot;today&quot; and your weeks line up with your calendar.
+      </PageTip>
       <Suspense fallback={<p className="text-sm opacity-70">Loading…</p>}>
         <SettingsForm searchParams={props.searchParams} />
       </Suspense>

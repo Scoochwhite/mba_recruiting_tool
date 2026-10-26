@@ -1,5 +1,6 @@
 import Link from "next/link";
 import manifest from "../../../../extension/manifest.json";
+import { PageTip } from "@/components/tour";
 
 export const metadata = { title: "Install the Chrome extension – MBA Recruiting Tool" };
 
@@ -63,6 +64,11 @@ export default function ExtensionPage() {
           Save someone from LinkedIn to your contacts in one click, with their title and company filled in.
         </p>
       </div>
+
+      <PageTip id="extension">
+        <strong>Tip:</strong> after installing, open any LinkedIn profile and click the extension. You can write your
+        outreach message in Settings.
+      </PageTip>
 
       <section className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold">Install</h2>

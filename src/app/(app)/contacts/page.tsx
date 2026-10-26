@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ContactFilterBar, ContactRow } from "@/components/contacts-ui";
+import { PageTip } from "@/components/tour";
 import { button } from "@/components/ui";
 
 async function ContactList({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
@@ -66,6 +67,10 @@ export default function ContactsPage(props: PageProps<"/contacts">) {
           Add contact
         </Link>
       </div>
+      <PageTip id="contacts">
+        <strong>Tip:</strong> star contacts who offer to refer you, and change anyone&apos;s stage right from their page to
+        keep your pipeline current.
+      </PageTip>
       <Suspense fallback={null}>
         <Filters searchParams={props.searchParams} />
       </Suspense>

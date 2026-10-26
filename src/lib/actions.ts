@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addRecurrence, isValidTimezone, nextBirthday, startOfWeek, today } from "@/lib/dates";
 import { clearFollowUp, recordMilestone, type Milestone } from "@/lib/milestones";
 import { loadSettings } from "@/lib/settings";
+import { TIP_IDS, TOUR_VERSION } from "@/lib/tour";
 import {
   STAGES,
   RECURRENCES,
@@ -512,6 +513,30 @@ export async function deleteAccount(formData: FormData) {
     // The account is already gone; the session cookie is cleared either way.
   }
   redirect("/login");
+}
+
+// Walkthrough ---------------------------------------------------------------------
+
+// Remembers that this person has seen the tour (up to the current version).
+export async function markTourSeen() {
+  const db = await getDb();
+  const { data } = await db.auth.getClaims();
+  await db.from("profiles").update({ tour_version: TOUR_VERSION }).eq("id", data!.claims.sub);
+}
+
+// Remembers that a one-time page tip was dismissed.
+export async function markTipSeen(id: string) {
+  if (!(TIP_IDS as readonly string[]).includes(id)) return;
+  const db = await getDb();
+  const { data } = await db.auth.getClaims();
+  const userId = data!.claims.sub;
+  const { data: profile } = await db.from("profiles").select("tips_seen").eq("id", userId).maybeSingle();
+  const seen: string[] = profile?.tips_seen ?? [];
+  if (!seen.includes(id)) await db.from("profiles").update({ tips_seen: [...seen, id] }).eq("id", userId);
+}
+
+export async function dismissChecklist() {
+  await updateProfile({ checklist_dismissed: true });
 }
 
 export async function signOut() {

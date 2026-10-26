@@ -6,6 +6,7 @@ import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { loadSettings } from "@/lib/settings";
 import { GoalWatcher } from "@/components/celebration";
+import { GettingStarted } from "@/components/getting-started";
 import { ActionRow, AddActionForm, type ActionItem } from "@/components/action-list";
 import { ContactForm } from "@/components/contact-form";
 import { EditDialog } from "@/components/edit-dialog";
@@ -60,7 +61,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   const nextWeek = addDays(weekStart, 7);
 
   const weekAhead = addDays(todayStr, 7);
-  const [counts, profile, snapshots, recent, due, newest] = await Promise.all([
+  const [counts, profile, snapshots, recent, due, newest, contactCount, requestCount, onboarding] = await Promise.all([
     supabase.rpc("kpi_counts", { from_date: weekStart, to_date: weekEnd }),
     supabase.from("profiles").select("weekly_goals").maybeSingle(),
     supabase.from("weekly_goal_snapshots").select("week_start, goals").order("week_start"),
@@ -88,6 +89,10 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       .select("id, full_name, title, company, stage, created_at, willing_to_refer")
       .order("created_at", { ascending: false })
       .limit(3),
+    // For the Getting started checklist.
+    supabase.from("contacts").select("id", { count: "exact", head: true }),
+    supabase.from("activities").select("id", { count: "exact", head: true }).eq("kind", "info_interview_request"),
+    supabase.from("profiles").select("checklist_dismissed, extension_used_at").maybeSingle(),
   ]);
   if (counts.error) return <p className="text-sm text-red-600">Couldn&apos;t load KPIs: {counts.error.message}</p>;
 
@@ -138,6 +143,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     detailsByKind.set(a.kind, [...(detailsByKind.get(a.kind) ?? []), item]);
   }
 
+  // The Getting started checklist: hidden once dismissed or finished (and if the columns don't exist yet).
+  const checklist = [
+    { label: "Add your first contact", hint: "Add someone you'd like to talk to, or save a LinkedIn profile.", done: (contactCount.count ?? 0) > 0, href: "/contacts/new" },
+    { label: "Install the Chrome extension", hint: "Save LinkedIn profiles in one click. It checks off once you've used it.", done: !!onboarding.data?.extension_used_at, href: "/extension" },
+    { label: "Set weekly goals", hint: "Use “Set weekly goals” on this page to pick your targets.", done: Object.keys(currentGoals).length > 0 },
+    { label: "Log your first request", hint: "Open a contact and click “Log request sent”.", done: (requestCount.count ?? 0) > 0, href: "/contacts" },
+  ];
+  const showChecklist =
+    !!onboarding.data && !onboarding.data.checklist_dismissed && checklist.some((item) => !item.done);
+
   const dueItems = (due.data ?? []) as unknown as ActionItem[];
   const overdue = dueItems.filter((i) => i.due_date! < todayStr);
   const dueToday = dueItems.filter((i) => i.due_date === todayStr);
@@ -162,7 +177,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex items-center gap-2">
+        <div data-tour="week" className="flex items-center gap-2">
           <nav
             aria-label="Week"
             className="flex items-center overflow-hidden rounded-md border border-black/15 text-sm dark:border-white/20"
@@ -225,7 +240,9 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
         </div>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {showChecklist && <GettingStarted items={checklist} />}
+
+      <section data-tour="kpis" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACTIVITY_KINDS.map(([kind, name]) => {
           const total = totals.get(kind) ?? 0;
           const goal = goals[kind];
@@ -240,7 +257,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
             />
           );
         })}
-        <div className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
+        <div data-tour="goals" className="flex items-center justify-center rounded-lg border border-dashed border-black/15 p-4 dark:border-white/20">
           <EditDialog title="Weekly goals" buttonLabel="Set weekly goals">
             <form action={saveGoals} className="grid gap-4 sm:grid-cols-2">
               <p className="text-xs opacity-70 sm:col-span-2">
@@ -262,7 +279,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
 
       <hr className="border-black/10 dark:border-white/15" />
 
-      <section className="flex flex-col gap-3">
+      <section data-tour="action-items" className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Action items</h2>
           <div className="flex items-center gap-3">
@@ -308,7 +325,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       {/* Two columns with a line between them. The activity list is held to the height of the contacts
           column (h-0 + min-h-full) and scrolls inside it, so a busy week doesn't stretch the page. */}
       <div className="grid gap-4 md:grid-cols-2 md:gap-0">
-        <section className="flex min-w-0 flex-col gap-3 md:min-h-[14rem] md:pr-6">
+        <section data-tour="contacts" className="flex min-w-0 flex-col gap-3 md:min-h-[14rem] md:pr-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Recently added contacts</h2>
             <div className="flex items-center gap-3">
