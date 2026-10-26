@@ -368,10 +368,25 @@ export async function addActivity(formData: FormData) {
   revalidatePath("/");
 }
 
+// Changes when an activity happened (say, you logged Saturday's interview on Sunday) and its note.
+// Its type and contact stay fixed, so each contact still has one request and one interview on record.
+export async function updateActivity(id: string, formData: FormData) {
+  const db = await getDb();
+  const settings = await loadSettings(db);
+  const date = text(formData, "occurred_on");
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today(settings.timezone)) {
+    throw new Error("Pick a date that isn't in the future.");
+  }
+  const { error } = await db.from("activities").update({ occurred_on: date, note: text(formData, "note") }).eq("id", id);
+  if (error) throw new Error(error.message);
+  // Weekly counts, History, and the "✓ Request sent …" dates on contact pages all read from this.
+  revalidatePath("/", "layout");
+}
+
 export async function deleteActivity(id: string) {
   const db = await getDb();
   await db.from("activities").delete().eq("id", id);
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 // Logs an info-interview milestone for a contact and advances their stage (never backwards).

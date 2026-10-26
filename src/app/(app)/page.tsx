@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { addActivity, createContact, deleteActivity, saveGoals, setContactStage } from "@/lib/actions";
+import { addActivity, createContact, deleteActivity, saveGoals, setContactStage, updateActivity } from "@/lib/actions";
 import { ACTIVITY_KINDS, STAGES } from "@/lib/constants";
 import { addDays, dateOf, formatDate, formatShortDate, startOfWeek, today } from "@/lib/dates";
 import { loadSettings } from "@/lib/settings";
@@ -374,6 +374,25 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                         {who && <span className="opacity-70"> · {who}</span>}
                         {a.note && <span className="opacity-70"> · {a.note}</span>}
                       </span>
+                      <EditDialog title="Edit activity" buttonLabel="Edit" buttonClass="text-xs opacity-40 hover:opacity-100">
+                        <form action={updateActivity.bind(null, a.id)} className="grid gap-4">
+                          <p className="text-sm">
+                            <strong>{SINGULAR[a.kind]}</strong>
+                            {who && <span className="opacity-70"> · {who}</span>}
+                          </p>
+                          <label className={label}>
+                            Date
+                            <DateInput name="occurred_on" required max={todayStr} defaultValue={a.occurred_on} className={input} />
+                          </label>
+                          <label className={label}>
+                            Note (optional)
+                            <input name="note" defaultValue={a.note ?? ""} className={input} />
+                          </label>
+                          <div>
+                            <button className={button}>Save changes</button>
+                          </div>
+                        </form>
+                      </EditDialog>
                       <form action={deleteActivity.bind(null, a.id)}>
                         <button aria-label="Delete" className="text-xs opacity-40 hover:opacity-100">
                           ✕
