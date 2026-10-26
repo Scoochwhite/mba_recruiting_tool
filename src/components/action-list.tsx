@@ -26,7 +26,7 @@ export function ActionRow({ item, today }: { item: ActionItem; today: string }) 
   const done = !!item.completed_at;
   const overdue = !done && item.due_date !== null && item.due_date < today;
   return (
-    <li className="flex items-center gap-3 py-2">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <form action={done ? reopenActionItem.bind(null, item.id) : completeActionItem.bind(null, item.id)}>
         <button
           aria-label={done ? "Mark not done" : "Mark done"}
@@ -35,7 +35,7 @@ export function ActionRow({ item, today }: { item: ActionItem; today: string }) 
           {done ? "✓" : ""}
         </button>
       </form>
-      <div className="flex-1">
+      <div className="min-w-0 flex-1 basis-40 break-words">
         <span className={done ? "line-through opacity-50" : ""}>{item.title}</span>
         {item.contacts && (
           <Link href={`/contacts/${item.contact_id}`} className="ml-2 text-xs opacity-70 hover:underline">

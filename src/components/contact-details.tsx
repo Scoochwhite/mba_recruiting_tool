@@ -52,11 +52,11 @@ export function ContactDetails({ contact }: { contact: Contact }) {
   ];
 
   return (
-    <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[8rem_1fr]">
+    <dl className="grid grid-cols-[minmax(0,1fr)] gap-x-6 gap-y-3 text-sm sm:grid-cols-[8rem_minmax(0,1fr)]">
       {rows.map(([name, value]) => (
         <div key={name} className="contents">
           <dt className="opacity-70">{name}</dt>
-          <dd>{value || <span className="opacity-40">—</span>}</dd>
+          <dd className="min-w-0 [overflow-wrap:anywhere]">{value || <span className="opacity-40">—</span>}</dd>
         </div>
       ))}
     </dl>

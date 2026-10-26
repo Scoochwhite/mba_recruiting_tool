@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { STAGES } from "@/lib/constants";
-import { button, buttonQuiet, input, inputAuto } from "@/components/ui";
+import { ContactFilterBar, ContactRow } from "@/components/contacts-ui";
+import { button } from "@/components/ui";
 
 async function ContactList({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
   const { q, stage, referrers, sort } = await searchParams;
@@ -35,31 +35,10 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
   if (!contacts.length)
     return <p className="text-sm opacity-70">{query || stageFilter || referrersOnly ? "No matches." : "No contacts yet — add your first one."}</p>;
 
-  const stageName = Object.fromEntries(STAGES);
   return (
     <ul className="divide-y divide-black/10 dark:divide-white/15">
       {contacts.map((c) => (
-        <li key={c.id}>
-          <Link href={`/contacts/${c.id}`} className="flex items-center gap-4 py-3 hover:opacity-80">
-            <div className="flex-1">
-              <div className="font-medium">
-                {c.full_name}
-                {c.willing_to_refer && (
-                  <span className="ml-1.5 text-navy dark:text-white" title="Willing to refer you" aria-label="Willing to refer you">
-                    ★
-                  </span>
-                )}
-              </div>
-              <div className="text-sm opacity-70">{[c.title, c.company].filter(Boolean).join(" · ")}</div>
-            </div>
-            {c.tags.map((t: string) => (
-              <span key={t} className="rounded-full bg-black/5 px-2 py-0.5 text-xs dark:bg-white/10">
-                {t}
-              </span>
-            ))}
-            <span className="text-xs opacity-70">{stageName[c.stage]}</span>
-          </Link>
-        </li>
+        <ContactRow key={c.id} contact={c} />
       ))}
     </ul>
   );
@@ -69,43 +48,12 @@ async function ContactList({ searchParams }: { searchParams: PageProps<"/contact
 async function Filters({ searchParams }: { searchParams: PageProps<"/contacts">["searchParams"] }) {
   const { q, stage, referrers, sort } = await searchParams;
   return (
-    <form className="flex items-center gap-2">
-      <input
-        name="q"
-        defaultValue={typeof q === "string" ? q : ""}
-        placeholder="Search name, company, title…"
-        className={`${input} min-w-0 flex-1`}
-      />
-      <select name="stage" defaultValue={typeof stage === "string" ? stage : ""} className={inputAuto}>
-        <option value="">All stages</option>
-        {STAGES.map(([value, name]) => (
-          <option key={value} value={value}>
-            {name}
-          </option>
-        ))}
-      </select>
-      <select
-        name="sort"
-        defaultValue={sort === "added" || sort === "edited" ? sort : "alpha"}
-        aria-label="Sort by"
-        title="Sort by"
-        className={inputAuto}
-      >
-        <option value="alpha">A–Z</option>
-        <option value="added">Newest</option>
-        <option value="edited">Recently edited</option>
-      </select>
-      <label
-        className="flex cursor-pointer items-center gap-1.5 text-lg"
-        title="Only show contacts willing to refer you"
-      >
-        <input type="checkbox" name="referrers" value="1" defaultChecked={referrers === "1"} aria-label="Only show contacts willing to refer you" />
-        <span aria-hidden className="text-navy dark:text-white">
-          ★
-        </span>
-      </label>
-      <button className={buttonQuiet}>Filter</button>
-    </form>
+    <ContactFilterBar
+      q={typeof q === "string" ? q : ""}
+      stage={typeof stage === "string" ? stage : ""}
+      referrers={referrers === "1"}
+      sort={typeof sort === "string" ? sort : ""}
+    />
   );
 }
 

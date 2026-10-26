@@ -53,7 +53,7 @@ async function ContactDetail({ params, searchParams }: {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold">{contact.full_name}</h1>
+          <h1 className="break-words text-2xl font-semibold">{contact.full_name}</h1>
           <p className="text-sm opacity-70">{[contact.title, contact.company].filter(Boolean).join(" · ")}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <form action={setContactStage.bind(null, id)}>

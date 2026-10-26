@@ -369,7 +369,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
                   return (
                     <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
                       <span className="w-14 shrink-0 text-xs opacity-70">{formatShortDate(a.occurred_on)}</span>
-                      <span className="flex-1">
+                      <span className="min-w-0 flex-1 break-words">
                         {SINGULAR[a.kind]}
                         {who && <span className="opacity-70"> · {who}</span>}
                         {a.note && <span className="opacity-70"> · {a.note}</span>}

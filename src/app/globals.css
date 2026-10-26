@@ -107,3 +107,18 @@
   .celebrate-piece { display: none; }
   .celebrate-card { animation: none; transform: translate(-50%, -50%); }
 }
+
+/* Phones: iPhone Safari zooms in on any text box smaller than 16px and doesn't zoom back out. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Safety net: one stray wide element must never make the whole page scroll sideways or shrink. */
+html,
+body {
+  overflow-x: clip;
+}
