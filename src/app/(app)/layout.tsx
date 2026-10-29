@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { CelebrationHost } from "@/components/celebration";
 import { NavMenu } from "@/components/nav-menu";
 import { TourLoader } from "@/components/tour-loader";
@@ -37,6 +38,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <div className="mx-auto w-full min-w-0 max-w-4xl flex-1 p-4 sm:p-6">{children}</div>
+      <AutoRefresh />
       <CelebrationHost />
       <Suspense fallback={null}>
         <TourLoader />
